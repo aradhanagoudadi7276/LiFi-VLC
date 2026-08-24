@@ -1,0 +1,9 @@
+node_modules/
+.venv/
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore the cache directories
+__pycache__/
