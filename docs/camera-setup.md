@@ -56,6 +56,8 @@ logLevel: info
 webrtc: yes
 webrtcAddress: :8889
 webrtcLocalUDPAddress: :8189
+hls: yes
+hlsAddress: :8888
 
 paths:
   cam:
@@ -101,19 +103,17 @@ Find the Raspberry Pi IP address:
 hostname -I
 ```
 
-On another device connected to the same network, open the following URL in a WebRTC-compatible browser:
+For local network access, open the HLS player on port `8888`:
 
 ```text
-http://YOUR_PI_IP:8889/cam
+http://YOUR_PI_IP:8888/cam
 ```
 
 Replace `YOUR_PI_IP` with the actual IP address of the Raspberry Pi.
 
 For example, if the Pi's IP address is `192.168.1.100`:
 
-```text
-http://192.168.1.100:8889/cam
-```
+For low-latency WebRTC on a network that can reach the ICE UDP port, use `http://YOUR_PI_IP:8889/cam`. Remote users accessing through Tailscale Funnel should use the HLS player proxied under the dashboard's `/cam` path; Funnel does not carry the WebRTC ICE UDP stream.
 
 ## 6. Configure automatic startup on reboot
 
@@ -210,7 +210,8 @@ sudo systemctl disable mediamtx
 - **Resolution:** Start with 1280 × 720 at 30 FPS.
 - **Bitrate:** Start with 3 Mbps; reduce it if the network struggles.
 - **Network:** Prefer Ethernet or a strong local Wi-Fi connection.
-- **WebRTC:** TCP port `8889` serves the browser player; UDP port `8189` is used for ICE media connectivity.
+- **HLS:** TCP port `8888` serves the browser player over HTTP and is suitable for HTTPS reverse proxying. It has more latency than WebRTC.
+- **WebRTC:** TCP port `8889` serves the browser player; UDP port `8189` is used for ICE media connectivity and is not carried by Tailscale Funnel.
 - **Camera detection:** Confirm the CSI ribbon is seated correctly and that `rpicam-hello --list-cameras` detects the camera.
 - **Service errors:** Check `sudo journalctl -u mediamtx -n 40 --no-pager`.
 - **Port conflicts:** Ensure another MediaMTX process is not already using the configured ports.

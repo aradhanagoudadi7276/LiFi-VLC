@@ -214,9 +214,9 @@ https://tailscale.com/kb/1223/funnel
 
 ### Important precautions
 
-- Do not expose port `8000` publicly unless the backend is specifically designed and secured for public access.
-- Prefer exposing only the frontend.
-- Make sure API and WebSocket connections work with your frontend's proxy configuration.
+- Do not expose port `8000` directly to the internet; keep it bound to `127.0.0.1` behind Tailscale's HTTPS proxy.
+- Funnel makes the Django login and dashboard publicly accessible; replace the starter `admin` password with a strong password and set `DJANGO_DEBUG=false`.
+- Make sure API and WebSocket connections work through the HTTPS proxy.
 - Review the current Tailscale documentation for supported commands and configuration.
 
 ## 8. Use a Custom Domain
@@ -228,6 +228,51 @@ https://vlc.example.com
 ```
 
 To use your own domain, you need a separate public-facing reverse proxy, tunnel, or hosting setup that supports your domain and HTTPS certificates.
+
+## 9. Serve Django and the camera through one HTTPS URL
+
+Keep Django on the existing root URL (`https://<device>.<tailnet>.ts.net/`) and map the camera path to MediaMTX's HLS player. This uses the existing HTTPS listener on port `443`; it does not create another listener or require a separate camera hostname.
+
+First, confirm the local services respond on the Raspberry Pi:
+
+```bash
+curl -I http://127.0.0.1:8000/
+curl -I http://127.0.0.1:8888/cam/
+```
+
+Run Django bound to loopback (the current development server is suitable for testing only):
+
+```bash
+python manage.py runserver 127.0.0.1:8000
+```
+
+If Django is currently running with `0.0.0.0:8000`, stop it with `Ctrl+C` first, then restart using the loopback command above. Change the starter password with `python manage.py changepassword admin`.
+
+The existing root Serve route should already forward HTTPS `/` to Django on `127.0.0.1:8000`. Add a camera path on that same listener:
+
+```bash
+sudo tailscale serve --bg --set-path=/cam http://127.0.0.1:8888/cam/
+sudo tailscale serve status
+```
+
+The project config sets `urls.camera_stream` to `/cam/`, so the dashboard iframe uses the current hostname and HTTPS automatically. The proxy target must include MediaMTX's `/cam/` path: otherwise Tailscale forwards the request to the MediaMTX root and MediaMTX returns a 404. Open `https://<device>.<tailnet>.ts.net/cam/` directly to verify the player, then open the dashboard.
+
+If the dashboard must be public, inspect existing Funnel routes before changing them:
+
+```bash
+sudo tailscale funnel status
+```
+
+Do not run `tailscale funnel http://0.0.0.0:8000`: `0.0.0.0` is a bind address, not a reverse-proxy target, and this tries to create another default HTTPS listener. Funnel supports paths on its HTTPS listener; if the current public configuration does not already expose the `/cam` route, add the path-specific target:
+
+```bash
+sudo tailscale funnel --bg --set-path=/cam http://127.0.0.1:8888/cam/
+sudo tailscale funnel status
+```
+
+Keep the existing root Funnel route for Django. Do not reset the Serve or Funnel configuration, since that can remove the working root route. Tailscale Serve/Funnel path routing is documented by the [Tailscale CLI reference](https://tailscale.com/docs/reference/tailscale-cli/serve) and [Funnel CLI reference](https://tailscale.com/docs/reference/tailscale-cli/funnel).
+
+This uses HLS over HTTPS, which is compatible with a single Funnel HTTPS listener. It has more latency than WebRTC, but does not require forwarding ICE media over UDP. Keep MediaMTX's HLS server enabled on local port `8888`.
 
 A DNS record pointing to a private Tailscale IP will not make the service accessible to ordinary internet visitors who are not connected to Tailscale.
 

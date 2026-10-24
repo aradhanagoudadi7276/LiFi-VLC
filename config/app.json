@@ -2,10 +2,14 @@
   "allowed_hosts": [
     "localhost",
     "127.0.0.1",
-    "10.78.52.72"
+    "10.78.52.72",
+    "vlc-server.tail4db684.ts.net"
+  ],
+  "csrf_trusted_origins": [
+    "https://vlc-server.tail4db684.ts.net"
   ],
   "urls": {
-    "camera_stream": "http://10.78.52.72:8889/cam",
+    "camera_stream": "/cam/",
     "control_websocket": "/ws/control/"
   }
 }

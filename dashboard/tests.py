@@ -1,6 +1,7 @@
 import json
 
 from channels.testing import WebsocketCommunicator
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
@@ -24,9 +25,16 @@ class DashboardTests(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Camera stream")
-        self.assertContains(response, "10.78.52.72:8889/cam")
+        self.assertContains(response, settings.CAMERA_STREAM_URL)
+        self.assertEqual(settings.CAMERA_STREAM_URL, "/cam/")
         self.assertContains(response, "/ws/control/")
         self.assertContains(response, "--color-primary: #2563EB")
+
+    def test_tailscale_origin_is_csrf_trusted(self):
+        self.assertIn(
+            "https://vlc-server.tail4db684.ts.net",
+            settings.CSRF_TRUSTED_ORIGINS,
+        )
 
     def test_login_page_uses_configured_theme(self):
         response = self.client.get("/login/")

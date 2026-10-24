@@ -22,6 +22,14 @@ ALLOWED_HOSTS = [
     ).split(",")
     if host.strip()
 ]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "DJANGO_CSRF_TRUSTED_ORIGINS",
+        ",".join(APP_CONFIG["csrf_trusted_origins"]),
+    ).split(",")
+    if origin.strip()
+]
 
 INSTALLED_APPS = [
     "daphne",
