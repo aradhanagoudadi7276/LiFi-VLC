@@ -229,50 +229,54 @@ https://vlc.example.com
 
 To use your own domain, you need a separate public-facing reverse proxy, tunnel, or hosting setup that supports your domain and HTTPS certificates.
 
-## 9. Serve Django and the camera through one HTTPS URL
+## 9. Serve Django and the camera through Caddy and one Funnel listener
 
-Keep Django on the existing root URL (`https://<device>.<tailnet>.ts.net/`) and map the camera path to MediaMTX's HLS player. This uses the existing HTTPS listener on port `443`; it does not create another listener or require a separate camera hostname.
+Caddy provides one local reverse-proxy entry point. Tailscale Funnel forwards its existing HTTPS root listener to Caddy, which routes Django and WebSockets to port `8000` and the MediaMTX HLS player to port `8888`.
 
-First, confirm the local services respond on the Raspberry Pi:
+Install Caddy using the official [Debian/Ubuntu/Raspbian instructions](https://caddyserver.com/docs/install#debian-ubuntu-raspbian). Confirm Django and MediaMTX are running locally:
 
 ```bash
 curl -I http://127.0.0.1:8000/
 curl -I http://127.0.0.1:8888/cam/
 ```
 
-Run Django bound to loopback (the current development server is suitable for testing only):
+Run Django bound to loopback (the development server is suitable for testing only):
 
 ```bash
 python manage.py runserver 127.0.0.1:8000
 ```
 
-If Django is currently running with `0.0.0.0:8000`, stop it with `Ctrl+C` first, then restart using the loopback command above. Change the starter password with `python manage.py changepassword admin`.
+If Django is currently running with `0.0.0.0:8000`, stop it with `Ctrl+C` first. Change the starter password with `python manage.py changepassword admin`.
 
-The existing root Serve route should already forward HTTPS `/` to Django on `127.0.0.1:8000`. Add a camera path on that same listener:
+Validate the project Caddy configuration:
 
 ```bash
-sudo tailscale serve --bg --set-path=/cam http://127.0.0.1:8888/cam/
-sudo tailscale serve status
+sudo caddy validate --config "$PWD/config/Caddyfile"
 ```
 
-The project config sets `urls.camera_stream` to `/cam/`, so the dashboard iframe uses the current hostname and HTTPS automatically. The proxy target must include MediaMTX's `/cam/` path: otherwise Tailscale forwards the request to the MediaMTX root and MediaMTX returns a 404. Open `https://<device>.<tailnet>.ts.net/cam/` directly to verify the player, then open the dashboard.
-
-If the dashboard must be public, inspect existing Funnel routes before changing them:
+On this Pi, Caddy is already running as a systemd service using `/etc/caddy/Caddyfile`. Do not run `caddy start` to launch a second instance; the existing process owns the admin endpoint on port `2019`. Reload the running service with the project config:
 
 ```bash
+sudo caddy reload --config "$PWD/config/Caddyfile"
+curl -I http://127.0.0.1:8080/
+curl -I http://127.0.0.1:8080/cam/
+```
+
+Reloading replaces the current Caddy routes with the project configuration. The Caddyfile binds only to `127.0.0.1:8080`; it proxies `/` and WebSocket requests to Django and `/cam/` to MediaMTX, preserving the camera path. The combined setup script also reloads Caddy before updating Funnel.
+
+Configure the existing public HTTPS listener to forward all requests to Caddy:
+
+```bash
+sudo tailscale funnel --bg --set-path=/ http://127.0.0.1:8080
+sudo tailscale funnel --https=443 --set-path=/cam off
 sudo tailscale funnel status
 ```
 
-Do not run `tailscale funnel http://0.0.0.0:8000`: `0.0.0.0` is a bind address, not a reverse-proxy target, and this tries to create another default HTTPS listener. Funnel supports paths on its HTTPS listener; if the current public configuration does not already expose the `/cam` route, add the path-specific target:
+The first command sends the root route to Caddy. The second removes the previous direct `/cam` Funnel route, so `/cam` is handled by the same Caddy proxy. Do not run `tailscale funnel http://0.0.0.0:8000`; `0.0.0.0` is a bind address and this may attempt to create another listener.
 
-```bash
-sudo tailscale funnel --bg --set-path=/cam http://127.0.0.1:8888/cam/
-sudo tailscale funnel status
-```
+The dashboard is configured to use `/cam/`. Verify `https://<device>.<tailnet>.ts.net/cam/` directly, then open `https://<device>.<tailnet>.ts.net/`. HLS is carried over HTTPS and does not need Funnel to forward WebRTC's UDP media port, but it has more latency than WebRTC.
 
-Keep the existing root Funnel route for Django. Do not reset the Serve or Funnel configuration, since that can remove the working root route. Tailscale Serve/Funnel path routing is documented by the [Tailscale CLI reference](https://tailscale.com/docs/reference/tailscale-cli/serve) and [Funnel CLI reference](https://tailscale.com/docs/reference/tailscale-cli/funnel).
-
-This uses HLS over HTTPS, which is compatible with a single Funnel HTTPS listener. It has more latency than WebRTC, but does not require forwarding ICE media over UDP. Keep MediaMTX's HLS server enabled on local port `8888`.
+Tailscale path routing and Funnel are documented in the [Tailscale Serve CLI reference](https://tailscale.com/docs/reference/tailscale-cli/serve) and [Funnel CLI reference](https://tailscale.com/docs/reference/tailscale-cli/funnel). Do not reset the Funnel configuration, since that can remove other routes.
 
 A DNS record pointing to a private Tailscale IP will not make the service accessible to ordinary internet visitors who are not connected to Tailscale.
 

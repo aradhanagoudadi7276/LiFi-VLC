@@ -1,0 +1,14 @@
+:8080 {
+	bind 127.0.0.1
+
+	@camera_root path /cam
+	redir @camera_root /cam/ 308
+
+	handle /cam/* {
+		reverse_proxy 127.0.0.1:8888
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8000
+	}
+}

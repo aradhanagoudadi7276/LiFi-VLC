@@ -58,6 +58,9 @@ webrtcAddress: :8889
 webrtcLocalUDPAddress: :8189
 hls: yes
 hlsAddress: :8888
+hlsVariant: lowLatency
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
 
 paths:
   cam:
@@ -210,7 +213,8 @@ sudo systemctl disable mediamtx
 - **Resolution:** Start with 1280 × 720 at 30 FPS.
 - **Bitrate:** Start with 3 Mbps; reduce it if the network struggles.
 - **Network:** Prefer Ethernet or a strong local Wi-Fi connection.
-- **HLS:** TCP port `8888` serves the browser player over HTTP and is suitable for HTTPS reverse proxying. It has more latency than WebRTC.
+- **HLS:** TCP port `8888` serves the browser player over HTTP and is suitable for HTTPS reverse proxying. `lowLatency` with shorter parts can reduce HLS playback delay, but may stutter if the network or browser cannot keep up. Start with `hlsPartDuration: 200ms`; avoid lowering it unless playback remains stable.
+- **Public access:** Funnel carries the HLS stream over HTTPS. It cannot forward WebRTC's UDP media path, so this setup has more latency than WebRTC even with Low-Latency HLS enabled.
 - **WebRTC:** TCP port `8889` serves the browser player; UDP port `8189` is used for ICE media connectivity and is not carried by Tailscale Funnel.
 - **Camera detection:** Confirm the CSI ribbon is seated correctly and that `rpicam-hello --list-cameras` detects the camera.
 - **Service errors:** Check `sudo journalctl -u mediamtx -n 40 --no-pager`.
