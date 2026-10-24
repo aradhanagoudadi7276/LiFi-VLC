@@ -1,15 +1,21 @@
+import json
 import os
 from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+with (BASE_DIR / "config" / "theme.json").open(encoding="utf-8") as theme_file:
+    THEME_CONFIG = json.load(theme_file)
 
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "django-insecure-change-this-key-before-deployment",
 )
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS",
+    "localhost,127.0.0.1,10.78.52.72",
+).split(",")
 
 INSTALLED_APPS = [
     "daphne",
@@ -45,6 +51,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "dashboard.context_processors.theme",
             ],
         },
     },

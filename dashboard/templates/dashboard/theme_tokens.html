@@ -1,0 +1,39 @@
+:root {
+  color-scheme: {{ theme.mode }};
+{% for name, value in theme.colors.items %}
+  --color-{{ name }}: {{ value }};
+{% endfor %}
+  --font-primary: {{ theme.typography.font_family.primary }};
+  --font-heading: {{ theme.typography.font_family.heading }};
+  --font-monospace: {{ theme.typography.font_family.monospace }};
+  --font-fallback: {{ theme.typography.font_family.fallback|join:", " }};
+{% for name, value in theme.typography.font_sizes.items %}
+  --font-size-{{ name }}: {{ value }};
+{% endfor %}
+{% for name, value in theme.typography.font_weights.items %}
+  --font-weight-{{ name }}: {{ value }};
+{% endfor %}
+{% for name, value in theme.typography.line_height.items %}
+  --line-height-{{ name }}: {{ value }};
+{% endfor %}
+{% for name, value in theme.border_radius.items %}
+  --radius-{{ name }}: {{ value }};
+{% endfor %}
+{% for name, value in theme.spacing.items %}
+  --spacing-{{ name }}: {{ value }};
+{% endfor %}
+{% for name, value in theme.shadows.items %}
+  --shadow-{{ name }}: {{ value }};
+{% endfor %}
+{% for component, properties in theme.components.items %}
+{% for name, value in properties.items %}
+  --component-{{ component }}-{{ name }}: {{ value }};
+{% endfor %}
+{% if component == "header" and properties.border_bottom %}
+  --component-header-border: {{ properties.border_bottom }};
+{% endif %}
+{% endfor %}
+{% for name, value in theme.effects.items %}
+  --effect-{{ name }}: {{ value }};
+{% endfor %}
+}

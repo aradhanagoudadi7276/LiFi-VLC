@@ -25,6 +25,13 @@ class DashboardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Camera stream")
         self.assertContains(response, "ws/control/")
+        self.assertContains(response, "--color-primary: #2563EB")
+
+    def test_login_page_uses_configured_theme(self):
+        response = self.client.get("/login/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "--color-background: #F9FAFB")
+        self.assertContains(response, "--component-button-primary_background: #2563EB")
 
 
 class ControlConsumerTests(TestCase):

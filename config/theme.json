@@ -1,0 +1,146 @@
+{
+  "theme": {
+    "name": "Minimal Light",
+    "mode": "light",
+    "colors": {
+      "primary": "#2563EB",
+      "primary_hover": "#1D4ED8",
+      "secondary": "#6366F1",
+      "accent": "#0891B2",
+      "background": "#F9FAFB",
+      "surface": "#FFFFFF",
+      "surface_secondary": "#F3F4F6",
+      "surface_hover": "#F3F6FA",
+      "text_primary": "#111827",
+      "text_secondary": "#4B5563",
+      "text_muted": "#9CA3AF",
+      "border": "#E5E7EB",
+      "border_focus": "#2563EB",
+      "success": "#15803D",
+      "success_background": "#F0FDF4",
+      "warning": "#B45309",
+      "warning_background": "#FFFBEB",
+      "error": "#B91C1C",
+      "error_background": "#FEF2F2",
+      "info": "#0369A1",
+      "info_background": "#F0F9FF"
+    },
+    "typography": {
+      "font_family": {
+        "primary": "Inter",
+        "heading": "Inter",
+        "monospace": "JetBrains Mono",
+        "fallback": [
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif"
+        ]
+      },
+      "font_sizes": {
+        "xs": "12px",
+        "sm": "14px",
+        "base": "15px",
+        "lg": "17px",
+        "xl": "20px",
+        "2xl": "24px",
+        "3xl": "30px",
+        "4xl": "36px"
+      },
+      "font_weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      },
+      "line_height": {
+        "tight": 1.25,
+        "normal": 1.5,
+        "relaxed": 1.7
+      }
+    },
+    "border_radius": {
+      "none": "0px",
+      "sm": "4px",
+      "md": "8px",
+      "lg": "10px",
+      "xl": "14px",
+      "full": "9999px"
+    },
+    "spacing": {
+      "xs": "4px",
+      "sm": "8px",
+      "md": "12px",
+      "lg": "16px",
+      "xl": "24px",
+      "2xl": "32px",
+      "3xl": "48px"
+    },
+    "shadows": {
+      "sm": "none",
+      "md": "none",
+      "lg": "none"
+    },
+    "components": {
+      "card": {
+        "background": "#FFFFFF",
+        "border": "1px solid #E5E7EB",
+        "radius": "8px",
+        "padding": "20px",
+        "shadow": "none"
+      },
+      "button": {
+        "primary_background": "#2563EB",
+        "primary_text": "#FFFFFF",
+        "hover_background": "#1D4ED8",
+        "radius": "6px",
+        "height": "38px",
+        "font_weight": 500
+      },
+      "input": {
+        "background": "#FFFFFF",
+        "text": "#111827",
+        "placeholder": "#9CA3AF",
+        "border": "#D1D5DB",
+        "focus_border": "#2563EB",
+        "radius": "6px",
+        "height": "40px"
+      },
+      "sidebar": {
+        "background": "#FFFFFF",
+        "text": "#4B5563",
+        "active_background": "#EFF6FF",
+        "active_text": "#2563EB",
+        "width": "240px",
+        "border_right": "1px solid #E5E7EB"
+      },
+      "header": {
+        "background": "#FFFFFF",
+        "text": "#111827",
+        "border_bottom": "1px solid #E5E7EB",
+        "height": "60px"
+      }
+    },
+    "charts": {
+      "primary": "#2563EB",
+      "secondary": "#6366F1",
+      "signal": "#0891B2",
+      "success": "#15803D",
+      "warning": "#B45309",
+      "grid": "#E5E7EB",
+      "label": "#6B7280",
+      "background": "#FFFFFF"
+    },
+    "effects": {
+      "transition": "150ms ease",
+      "hover_opacity": 0.95,
+      "focus_ring": "0 0 0 2px rgba(37, 99, 235, 0.15)"
+    },
+    "accessibility": {
+      "reduced_motion": true,
+      "visible_focus": true,
+      "minimum_touch_target": "44px"
+    }
+  }
+}

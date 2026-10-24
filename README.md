@@ -24,6 +24,10 @@ The bootstrap command creates this account only if the username does not already
 
 The dashboard embeds the MediaMTX WebRTC player at `http://127.0.0.1:8889/cam` by default. See [docs/camera-setup.md](docs/camera-setup.md) to configure the Raspberry Pi camera and MediaMTX. Override the player URL with `CAMERA_STREAM_URL` if MediaMTX is hosted elsewhere.
 
+## Theme
+
+The login page and dashboard theme are configured in [config/theme.json](config/theme.json). Edit its color, typography, spacing, border, component, chart, and effect tokens to re-theme both pages consistently. Restart Django after changing the file.
+
 ## WebSocket control
 
 The dashboard opens `/ws/control/` using the current page's WebSocket protocol and sends these JSON messages when the connection button is toggled:
@@ -49,3 +53,11 @@ Environment variables:
 - `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD`: optional initial account values
 
 Run tests with `python manage.py test`.
+
+When accessing the dashboard from another device, add the server's LAN IP to `DJANGO_ALLOWED_HOSTS`, for example:
+
+```bash
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,10.78.52.72 python manage.py runserver 0.0.0.0:8000
+```
+
+The default list includes `10.78.52.72` for the current LAN setup. Update it if the server's IP changes.
