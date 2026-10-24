@@ -4,6 +4,8 @@ from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+with (BASE_DIR / "config" / "app.json").open(encoding="utf-8") as app_file:
+    APP_CONFIG = json.load(app_file)
 with (BASE_DIR / "config" / "theme.json").open(encoding="utf-8") as theme_file:
     THEME_CONFIG = json.load(theme_file)
 
@@ -12,10 +14,14 @@ SECRET_KEY = os.environ.get(
     "django-insecure-change-this-key-before-deployment",
 )
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
-ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1,10.78.52.72",
-).split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        ",".join(APP_CONFIG["allowed_hosts"]),
+    ).split(",")
+    if host.strip()
+]
 
 INSTALLED_APPS = [
     "daphne",
@@ -87,7 +93,11 @@ LOGOUT_REDIRECT_URL = "login"
 
 CAMERA_STREAM_URL = os.environ.get(
     "CAMERA_STREAM_URL",
-    "http://127.0.0.1:8889/cam",
+    APP_CONFIG["urls"]["camera_stream"],
+)
+CONTROL_WEBSOCKET_URL = os.environ.get(
+    "CONTROL_WEBSOCKET_URL",
+    APP_CONFIG["urls"]["control_websocket"],
 )
 
 CHANNEL_LAYERS = {

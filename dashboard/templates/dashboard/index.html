@@ -74,8 +74,10 @@
       const button = document.getElementById("connect-button");
       const label = document.getElementById("connection-label");
       const status = document.getElementById("connection-status");
-      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/control/`);
+      const socketUrl = new URL("{{ control_websocket_url|escapejs }}", window.location.href);
+      if (socketUrl.protocol === "http:") socketUrl.protocol = "ws:";
+      if (socketUrl.protocol === "https:") socketUrl.protocol = "wss:";
+      const socket = new WebSocket(socketUrl);
       let connected = false;
       let pending = false;
 

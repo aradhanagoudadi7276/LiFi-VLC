@@ -1,0 +1,11 @@
+{
+  "allowed_hosts": [
+    "localhost",
+    "127.0.0.1",
+    "10.78.52.72"
+  ],
+  "urls": {
+    "camera_stream": "http://10.78.52.72:8889/cam",
+    "control_websocket": "/ws/control/"
+  }
+}

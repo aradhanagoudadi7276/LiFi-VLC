@@ -22,7 +22,7 @@ The bootstrap command creates this account only if the username does not already
 
 ## Camera stream
 
-The dashboard embeds the MediaMTX WebRTC player at `http://127.0.0.1:8889/cam` by default. See [docs/camera-setup.md](docs/camera-setup.md) to configure the Raspberry Pi camera and MediaMTX. Override the player URL with `CAMERA_STREAM_URL` if MediaMTX is hosted elsewhere.
+The dashboard embeds the MediaMTX WebRTC player configured in [config/app.json](config/app.json). Set `urls.camera_stream` to the browser-accessible MediaMTX WebRTC player URL for your camera. See [docs/camera-setup.md](docs/camera-setup.md) to configure the Raspberry Pi camera and MediaMTX.
 
 ## Theme
 
@@ -48,16 +48,17 @@ Environment variables:
 
 - `DJANGO_SECRET_KEY`: secret key (required for deployment)
 - `DJANGO_DEBUG`: defaults to `true`; set to `false` outside local development
-- `DJANGO_ALLOWED_HOSTS`: comma-separated host names; defaults to `localhost,127.0.0.1`
-- `CAMERA_STREAM_URL`: MediaMTX WebRTC player URL
+- `DJANGO_ALLOWED_HOSTS`: comma-separated host names; defaults to `allowed_hosts` in `config/app.json`
+- `CAMERA_STREAM_URL`: overrides `urls.camera_stream` from `config/app.json`
+- `CONTROL_WEBSOCKET_URL`: overrides `urls.control_websocket` from `config/app.json`
 - `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD`: optional initial account values
 
 Run tests with `python manage.py test`.
 
-When accessing the dashboard from another device, add the server's LAN IP to `DJANGO_ALLOWED_HOSTS`, for example:
+The application URLs and allowed hosts can be edited in `config/app.json`. The defaults are set for the current LAN IP. The control WebSocket URL can be a path (to use the current page's host and HTTP/HTTPS security) or a full WebSocket URL.
+
+For a temporary host override when accessing the dashboard from another device, set `DJANGO_ALLOWED_HOSTS`:
 
 ```bash
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,10.78.52.72 python manage.py runserver 0.0.0.0:8000
 ```
-
-The default list includes `10.78.52.72` for the current LAN setup. Update it if the server's IP changes.

@@ -24,7 +24,8 @@ class DashboardTests(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Camera stream")
-        self.assertContains(response, "ws/control/")
+        self.assertContains(response, "10.78.52.72:8889/cam")
+        self.assertContains(response, "/ws/control/")
         self.assertContains(response, "--color-primary: #2563EB")
 
     def test_login_page_uses_configured_theme(self):

@@ -8,5 +8,8 @@ def dashboard(request):
     return render(
         request,
         "dashboard/index.html",
-        {"camera_stream_url": settings.CAMERA_STREAM_URL},
+        {
+            "camera_stream_url": settings.CAMERA_STREAM_URL,
+            "control_websocket_url": settings.CONTROL_WEBSOCKET_URL,
+        },
     )
