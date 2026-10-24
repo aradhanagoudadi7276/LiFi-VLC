@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | LiFi Control</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; background: #0b1220; color: #e5edf8; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px clamp(20px, 5vw, 64px); border-bottom: 1px solid #26334a; background: #111b2c; }
+    .brand { color: #55d6be; font-size: 13px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .user { display: flex; align-items: center; gap: 18px; color: #a7b5c9; font-size: 14px; }
+    a { color: #55d6be; text-decoration: none; }
+    main { width: min(1100px, 100%); margin: 0 auto; padding: 44px 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 36px); }
+    .subtitle { margin: 0 0 28px; color: #9aabc2; }
+    .panel { overflow: hidden; border: 1px solid #26334a; border-radius: 16px; background: #111b2c; }
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 20px; border-bottom: 1px solid #26334a; }
+    .panel-heading h2 { margin: 0; font-size: 16px; }
+    .live { display: flex; align-items: center; gap: 8px; color: #a7b5c9; font-size: 13px; }
+    .live::before { width: 8px; height: 8px; border-radius: 50%; background: #55d6be; content: ""; }
+    .stream { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #05080e; }
+    .controls { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 20px; padding: 20px; border: 1px solid #26334a; border-radius: 14px; background: #111b2c; }
+    .control-copy strong { display: block; margin-bottom: 5px; }
+    .control-copy span { color: #9aabc2; font-size: 14px; }
+    .connect { min-width: 150px; padding: 12px 18px; border: 0; border-radius: 9px; background: #55d6be; color: #06251f; font: inherit; font-weight: 750; cursor: pointer; }
+    .connect.disconnect { background: #ff7777; color: #2b0808; }
+    .connect:disabled { opacity: .55; cursor: not-allowed; }
+    #connection-status { min-height: 20px; margin: 12px 4px 0; color: #9aabc2; font-size: 13px; }
+    @media (max-width: 560px) { .controls { align-items: stretch; flex-direction: column; } .connect { width: 100%; } header { align-items: flex-start; } .user { gap: 10px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">LiFi Control</div>
+    <div class="user">
+      <span>{{ request.user.username }}</span>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" style="padding:0;border:0;background:none;color:#55d6be;font:inherit;cursor:pointer">Log out</button>
+      </form>
+    </div>
+  </header>
+  <main>
+    <h1>Dashboard</h1>
+    <p class="subtitle">Monitor your camera and control the LiFi connection.</p>
+    <section class="panel" aria-labelledby="camera-title">
+      <div class="panel-heading">
+        <h2 id="camera-title">Camera stream</h2>
+        <span class="live">Stream player</span>
+      </div>
+      <iframe class="stream" src="{{ camera_stream_url }}" title="Live camera stream" allow="autoplay; fullscreen" allowfullscreen></iframe>
+    </section>
+    <section class="controls" aria-label="Connection controls">
+      <div class="control-copy">
+        <strong>LiFi connection</strong>
+        <span id="connection-label">Disconnected</span>
+      </div>
+      <button id="connect-button" class="connect" type="button" disabled>Connecting…</button>
+    </section>
+    <p id="connection-status" role="status" aria-live="polite">Connecting to control service…</p>
+  </main>
+  <script>
+    (() => {
+      const button = document.getElementById("connect-button");
+      const label = document.getElementById("connection-label");
+      const status = document.getElementById("connection-status");
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/control/`);
+      let connected = false;
+      let pending = false;
+
+      function updateButton() {
+        button.textContent = connected ? "Disconnect" : "Connect";
+        button.classList.toggle("disconnect", connected);
+        label.textContent = connected ? "Connected" : "Disconnected";
+        button.disabled = pending || socket.readyState !== WebSocket.OPEN;
+      }
+
+      socket.addEventListener("open", () => {
+        status.textContent = "Control service connected.";
+        updateButton();
+      });
+      socket.addEventListener("message", (event) => {
+        let message;
+        try {
+          message = JSON.parse(event.data);
+        } catch {
+          status.textContent = "Received an invalid response from the control service.";
+          pending = false;
+          updateButton();
+          return;
+        }
+        if (message.error) {
+          status.textContent = message.error;
+          pending = false;
+          updateButton();
+          return;
+        }
+        if (message.command === "connection" && message.status === "accepted") {
+          connected = message.value === "connect";
+          pending = false;
+          status.textContent = `Connection ${message.value === "connect" ? "established" : "closed"}.`;
+          updateButton();
+        }
+      });
+      socket.addEventListener("close", () => {
+        pending = false;
+        button.disabled = true;
+        button.textContent = "Unavailable";
+        status.textContent = "Control service disconnected. Refresh the page to reconnect.";
+      });
+      socket.addEventListener("error", () => {
+        status.textContent = "Could not connect to the control service.";
+      });
+      button.addEventListener("click", () => {
+        if (pending || socket.readyState !== WebSocket.OPEN) return;
+        pending = true;
+        updateButton();
+        socket.send(JSON.stringify({
+          command: "connection",
+          value: connected ? "disconnect" : "connect"
+        }));
+      });
+    })();
+  </script>
+</body>
+</html>
