@@ -53,7 +53,7 @@ try:
         #     f"ADC: {adc_value:4d} | "
         #     f"Voltage: {voltage:.3f} V"
         # )
-        if adc_value == 0:
+        if adc_value < 500:
             temp += '1'
         else:
             temp += '0'
