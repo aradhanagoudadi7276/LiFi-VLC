@@ -27,9 +27,9 @@ if ! curl --fail --silent --show-error --output /dev/null --max-time 5 http://12
   exit 1
 fi
 
-if ! curl --fail --silent --show-error --output /dev/null --max-time 5 http://127.0.0.1:8888/cam/; then
-  printf 'Error: MediaMTX HLS player is not responding at http://127.0.0.1:8888/cam.\n' >&2
-  printf 'Start MediaMTX with HLS enabled, then run this script again.\n' >&2
+if ! curl --fail --silent --show-error --output /dev/null --max-time 5 http://127.0.0.1:8889/cam/; then
+  printf 'Error: MediaMTX WebRTC player is not responding at http://127.0.0.1:8889/cam/.\n' >&2
+  printf 'Start MediaMTX with WebRTC enabled, then run this script again.\n' >&2
   exit 1
 fi
 

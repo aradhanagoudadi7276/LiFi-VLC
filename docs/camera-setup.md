@@ -56,19 +56,14 @@ logLevel: info
 webrtc: yes
 webrtcAddress: :8889
 webrtcLocalUDPAddress: :8189
-hls: yes
-hlsAddress: :8888
-hlsVariant: lowLatency
-hlsSegmentDuration: 1s
-hlsPartDuration: 200ms
 
 paths:
   cam:
     source: rpiCamera
     rpiCameraWidth: 1280
     rpiCameraHeight: 720
-    rpiCameraFPS: 30
-    rpiCameraBitrate: 3000000
+    rpiCameraFPS: 20
+    rpiCameraBitrate: 1500000
 ```
 
 Save using `Ctrl+O`, press Enter, and exit using `Ctrl+X`.
@@ -88,7 +83,7 @@ Check the logs for messages confirming that:
 - The Raspberry Pi camera has started.
 - Hardware H.264 encoding is enabled.
 - The `cam` stream is available and online.
-- WebRTC is listening on port `8889`, with ICE on UDP port `8189`.
+- WebRTC signaling is listening on TCP port `8889`, with ICE media on UDP port `8189`.
 
 Example successful log message:
 
@@ -106,17 +101,19 @@ Find the Raspberry Pi IP address:
 hostname -I
 ```
 
-For local network access, open the HLS player on port `8888`:
+For direct local-network access, open the MediaMTX WebRTC player:
 
 ```text
-http://YOUR_PI_IP:8888/cam
+http://YOUR_PI_IP:8889/cam
 ```
 
 Replace `YOUR_PI_IP` with the actual IP address of the Raspberry Pi.
 
-For example, if the Pi's IP address is `192.168.1.100`:
+The MediaMTX player page and WebRTC signaling use TCP port `8889`. WebRTC video also needs a working ICE media route to the Raspberry Pi on UDP port `8189`; allow that UDP port through the Pi's firewall and network. The dashboard uses the `/cam/` path on the Django/Caddy origin and sends WHEP signaling to `/cam/whep`.
 
-For low-latency WebRTC on a network that can reach the ICE UDP port, use `http://YOUR_PI_IP:8889/cam`. Remote users accessing through Tailscale Funnel should use the HLS player proxied under the dashboard's `/cam` path; Funnel does not carry the WebRTC ICE UDP stream.
+The project [Caddyfile](../config/Caddyfile) listens on `127.0.0.1:8080`, redirects `/cam` to `/cam/`, proxies `/cam/*` to MediaMTX on `127.0.0.1:8889`, and sends other requests to Django on `127.0.0.1:8000`. This reverse proxy carries the HTTP player and WHEP signaling; it does not proxy the separate UDP media traffic.
+
+Tailscale Funnel can carry the dashboard and WebRTC signaling over HTTPS, but it does not carry WebRTC's UDP media traffic. The dashboard camera therefore requires a direct working ICE route from the browser to the Raspberry Pi; Funnel alone is not sufficient for remote video playback. For remote viewing, connect through a network/VPN that provides that route or configure an appropriate WebRTC media relay.
 
 ## 6. Configure automatic startup on reboot
 
@@ -208,14 +205,14 @@ sudo systemctl restart mediamtx
 sudo systemctl disable mediamtx
 ```
 
-## 7. Low-latency settings and troubleshooting
+## 7. WebRTC settings and troubleshooting
 
-- **Resolution:** Start with 1280 × 720 at 30 FPS.
-- **Bitrate:** Start with 3 Mbps; reduce it if the network struggles.
+- **Resolution:** This configuration uses 1280 × 720 at 20 FPS.
+- **Bitrate:** This configuration uses 1.5 Mbps; adjust it if the network or encoder requires different settings.
 - **Network:** Prefer Ethernet or a strong local Wi-Fi connection.
-- **HLS:** TCP port `8888` serves the browser player over HTTP and is suitable for HTTPS reverse proxying. `lowLatency` with shorter parts can reduce HLS playback delay, but may stutter if the network or browser cannot keep up. Start with `hlsPartDuration: 200ms`; avoid lowering it unless playback remains stable.
-- **Public access:** Funnel carries the HLS stream over HTTPS. It cannot forward WebRTC's UDP media path, so this setup has more latency than WebRTC even with Low-Latency HLS enabled.
-- **WebRTC:** TCP port `8889` serves the browser player; UDP port `8189` is used for ICE media connectivity and is not carried by Tailscale Funnel.
+- **WebRTC signaling:** TCP port `8889` serves the player page and WHEP signaling.
+- **WebRTC media:** UDP port `8189` is used for ICE media connectivity. Verify the browser can reach the Pi over this port; a working HTTP/WHEP response alone does not prove that the video media route works.
+- **Tailscale Funnel:** Funnel does not carry WebRTC UDP media. A dashboard reachable through Funnel may still show the camera as unavailable unless a separate ICE route or WebRTC media relay is configured.
 - **Camera detection:** Confirm the CSI ribbon is seated correctly and that `rpicam-hello --list-cameras` detects the camera.
 - **Service errors:** Check `sudo journalctl -u mediamtx -n 40 --no-pager`.
 - **Port conflicts:** Ensure another MediaMTX process is not already using the configured ports.
@@ -223,9 +220,9 @@ sudo systemctl disable mediamtx
 
 For remote access, use a secure VPN such as Tailscale rather than exposing camera ports directly to the public internet.
 
-## 8. React integration
+## 8. Optional MediaMTX player integration
 
-You can embed the MediaMTX WebRTC player in your React frontend using an iframe.
+For a standalone test or a frontend that intentionally uses MediaMTX's built-in player, embed the WebRTC player page in an iframe:
 
 ```jsx
 export default function CameraStream() {
@@ -249,7 +246,7 @@ export default function CameraStream() {
 }
 ```
 
-Replace `192.168.1.100` with the Raspberry Pi's actual IP address. The browser device must be able to reach the Pi. For secure remote deployments, configure HTTPS and suitable WebRTC connectivity rather than relying on a public, unsecured HTTP endpoint.
+Replace `192.168.1.100` with the Raspberry Pi's actual IP address. The browser device must be able to reach the Pi over the WebRTC media path as well as load the player page. This is separate from the dashboard's native, control-free video player.
 
 ## References
 

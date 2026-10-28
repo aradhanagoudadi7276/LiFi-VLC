@@ -49,6 +49,13 @@ class DashboardTests(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Live camera stream")
+        self.assertContains(
+            response,
+            '<video class="stream" id="camera-video" autoplay muted playsinline disablepictureinpicture disableremoteplayback',
+        )
+        self.assertNotContains(response, "<iframe")
+        self.assertNotContains(response, 'id="camera-video" controls')
+        self.assertContains(response, "peer.connectionState === \"failed\"")
         self.assertContains(response, settings.CAMERA_STREAM_URL)
         self.assertEqual(settings.CAMERA_STREAM_URL, "/cam/")
         self.assertContains(response, "/ws/control/")

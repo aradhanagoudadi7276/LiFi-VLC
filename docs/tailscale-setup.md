@@ -231,13 +231,13 @@ To use your own domain, you need a separate public-facing reverse proxy, tunnel,
 
 ## 9. Serve Django and the camera through Caddy and one Funnel listener
 
-Caddy provides one local reverse-proxy entry point. Tailscale Funnel forwards its existing HTTPS root listener to Caddy, which routes Django and WebSockets to port `8000` and the MediaMTX HLS player to port `8888`.
+Caddy provides one local reverse-proxy entry point. Tailscale Funnel forwards its existing HTTPS root listener to Caddy, which routes Django and WebSockets to port `8000` and MediaMTX WebRTC player/signaling requests to port `8889`. WebRTC media uses UDP port `8189`, which Funnel does not carry; Funnel-only camera playback is therefore unavailable without a separate ICE route or WebRTC media relay.
 
 Install Caddy using the official [Debian/Ubuntu/Raspbian instructions](https://caddyserver.com/docs/install#debian-ubuntu-raspbian). Confirm Django and MediaMTX are running locally:
 
 ```bash
 curl -I http://127.0.0.1:8000/
-curl -I http://127.0.0.1:8888/cam/
+curl -I http://127.0.0.1:8889/cam/
 ```
 
 Run Django bound to loopback (the development server is suitable for testing only):
@@ -262,7 +262,7 @@ curl -I http://127.0.0.1:8080/
 curl -I http://127.0.0.1:8080/cam/
 ```
 
-Reloading replaces the current Caddy routes with the project configuration. The Caddyfile binds only to `127.0.0.1:8080`; it proxies `/` and WebSocket requests to Django and `/cam/` to MediaMTX, preserving the camera path. The combined setup script also reloads Caddy before updating Funnel.
+Reloading replaces the current Caddy routes with the project configuration. The Caddyfile binds only to `127.0.0.1:8080`; it redirects `/cam` to `/cam/`, proxies `/cam/*` to MediaMTX on `127.0.0.1:8889`, and sends other requests, including WebSockets, to Django. This handles the player page and WHEP signaling over HTTP; it does not forward the separate UDP media traffic on port `8189`. The combined setup script also reloads Caddy before updating Funnel.
 
 Configure the existing public HTTPS listener to forward all requests to Caddy:
 
@@ -274,7 +274,7 @@ sudo tailscale funnel status
 
 The first command sends the root route to Caddy. The second removes the previous direct `/cam` Funnel route, so `/cam` is handled by the same Caddy proxy. Do not run `tailscale funnel http://0.0.0.0:8000`; `0.0.0.0` is a bind address and this may attempt to create another listener.
 
-The dashboard is configured to use `/cam/`. Verify `https://<device>.<tailnet>.ts.net/cam/` directly, then open `https://<device>.<tailnet>.ts.net/`. HLS is carried over HTTPS and does not need Funnel to forward WebRTC's UDP media port, but it has more latency than WebRTC.
+The dashboard is configured to use `/cam/`. Verify `https://<device>.<tailnet>.ts.net/cam/` directly, then open `https://<device>.<tailnet>.ts.net/`. These checks confirm that the web routes work, not that WebRTC media can reach the browser. The video additionally needs an ICE route from the browser to the Raspberry Pi over UDP port `8189`, or a configured WebRTC media relay. Tailscale Funnel alone does not provide that route.
 
 Tailscale path routing and Funnel are documented in the [Tailscale Serve CLI reference](https://tailscale.com/docs/reference/tailscale-cli/serve) and [Funnel CLI reference](https://tailscale.com/docs/reference/tailscale-cli/funnel). Do not reset the Funnel configuration, since that can remove other routes.
 

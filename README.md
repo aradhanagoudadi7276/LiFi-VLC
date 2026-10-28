@@ -22,27 +22,13 @@ The bootstrap command creates this account only if the username does not already
 
 ## Camera stream
 
-The dashboard embeds the MediaMTX HLS player configured in [config/app.json](config/app.json). Caddy proxies the default `/cam/` path to MediaMTX's local HLS port `8888` and proxies dashboard and WebSocket requests to Django. Tailscale forwards the single HTTPS listener to Caddy. HLS works through HTTPS without a separate UDP media port, but has more latency than WebRTC. The MediaMTX example uses Low-Latency HLS with 200 ms parts as a balance between delay and stable playback. For details, see [docs/camera-setup.md](docs/camera-setup.md).
+The dashboard uses the camera path configured in [config/app.json](config/app.json) as the base MediaMTX path, then connects to its WebRTC/WHEP endpoint (for example, `/cam/whep`) with a native video element. Playback controls are intentionally omitted, and the connection message disappears when video playback starts. The MediaMTX configuration uses WebRTC signaling on TCP port `8889` and ICE media on UDP port `8189`; see [docs/camera-setup.md](docs/camera-setup.md) for the matching `mediamtx.yml` and Caddy setup. Caddy proxies `/cam/*` to MediaMTX's HTTP endpoint and dashboard requests to Django. The browser also needs a working ICE media route to the Raspberry Pi. Tailscale Funnel carries the dashboard and signaling, but not WebRTC's UDP media, so Funnel alone cannot provide remote camera playback.
 
 ## Access Django and camera through Tailscale
 
-Use one HTTPS hostname: Caddy receives requests from Tailscale, then proxies Django at `/` and the MediaMTX HLS player at `/cam`. Caddy listens on `127.0.0.1:8080`, so it is not directly exposed to the LAN. Funnel uses only its existing HTTPS root listener; do not create a second Tailscale listener.
+Use one HTTPS hostname: Caddy receives requests from Tailscale, then proxies Django at `/` and MediaMTX's WebRTC signaling endpoint under `/cam/`. Caddy listens on `127.0.0.1:8080`, so it is not directly exposed to the LAN. Funnel uses only its existing HTTPS root listener; do not create a second Tailscale listener. Funnel does not carry WebRTC's UDP media traffic, so camera playback for public Funnel visitors requires a separate ICE route or WebRTC media relay.
 
-1. Enable HLS in `~/mediamtx/mediamtx.yml`:
-
-   ```yaml
-   hls: yes
-   hlsAddress: :8888
-   ```
-
-   Restart MediaMTX and verify the player responds locally:
-
-   ```bash
-   sudo systemctl restart mediamtx
-   curl -I http://127.0.0.1:8888/cam/
-   ```
-
-2. Stop any Django `runserver` bound to `0.0.0.0:8000` with **Ctrl+C**, then run Django on loopback:
+1. Stop any Django `runserver` bound to `0.0.0.0:8000` with **Ctrl+C**, then run Django on loopback:
 
    ```bash
    python manage.py runserver 127.0.0.1:8000
@@ -50,13 +36,21 @@ Use one HTTPS hostname: Caddy receives requests from Tailscale, then proxies Dja
 
    Verify it locally with `curl -I http://127.0.0.1:8000/`. Do not expose port `8000` directly to the internet.
 
+2. Verify MediaMTX's WebRTC player page is available on TCP port `8889`:
+
+   ```bash
+   curl -I http://127.0.0.1:8889/cam/
+   ```
+
+   This checks the HTTP player endpoint only; browser playback also requires UDP port `8189` to be reachable over ICE.
+
 3. Install Caddy if it is not already installed (for Raspberry Pi OS, use the official [Caddy Debian/Ubuntu installation instructions](https://caddyserver.com/docs/install#debian-ubuntu-raspbian)). Validate the project config:
 
    ```bash
    sudo caddy validate --config "$PWD/config/Caddyfile"
    ```
 
-   Caddy is already managed by systemd on this Pi. Do not use `caddy start`, which tries to launch a second instance and fails with `127.0.0.1:2019: address already in use`. The helper below reloads the active Caddy process with the project config, which proxies `/` and `/ws/control/` to Django on `127.0.0.1:8000`, and `/cam/` to MediaMTX HLS on `127.0.0.1:8888`. It also redirects `/cam` to `/cam/`.
+   Caddy is already managed by systemd on this Pi. Do not use `caddy start`, which tries to launch a second instance and fails with `127.0.0.1:2019: address already in use`. The helper below reloads the active Caddy process with the project config, which proxies `/` and `/ws/control/` to Django on `127.0.0.1:8000`, and `/cam/` (including `/cam/whep`) to MediaMTX WebRTC on `127.0.0.1:8889`. It also redirects `/cam` to `/cam/`.
 
 4. Configure Funnel to forward its existing HTTPS listener to Caddy:
 
@@ -67,7 +61,7 @@ Use one HTTPS hostname: Caddy receives requests from Tailscale, then proxies Dja
 
    The helper validates and reloads the running Caddy service with the project config, checks Django and MediaMTX, points the single Funnel root route at Caddy, removes the old direct `/cam` route if present, and prints Funnel status. It does not reset Funnel configuration.
 
-Test `https://<your-device>.<your-tailnet>.ts.net/` and `https://<your-device>.<your-tailnet>.ts.net/cam/`. See [docs/tailscale-setup.md](docs/tailscale-setup.md) for more details. HLS has more latency than WebRTC, but works through HTTPS without Funnel needing to carry WebRTC's UDP media traffic.
+Test `https://<your-device>.<your-tailnet>.ts.net/` and `https://<your-device>.<your-tailnet>.ts.net/cam/`. See [docs/tailscale-setup.md](docs/tailscale-setup.md) for more details. The dashboard and WHEP signaling can be routed through Funnel, but the live video requires a separate WebRTC ICE media route; Funnel alone is not enough.
 
 Funnel makes the Django login page publicly accessible. Before enabling it, change the starter password (`python manage.py changepassword admin`), set `DJANGO_DEBUG=false`, and configure a strong `DJANGO_SECRET_KEY`.
 
