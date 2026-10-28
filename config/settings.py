@@ -107,6 +107,14 @@ CONTROL_WEBSOCKET_URL = os.environ.get(
     "CONTROL_WEBSOCKET_URL",
     APP_CONFIG["urls"]["control_websocket"],
 )
+LIFI_TRANSMITTER_WEBSOCKET_URL = os.environ.get(
+    "LIFI_TRANSMITTER_WEBSOCKET_URL",
+    "ws://127.0.0.1:8766",
+)
+LIFI_RECEIVER_WEBSOCKET_URL = os.environ.get(
+    "LIFI_RECEIVER_WEBSOCKET_URL",
+    "ws://127.0.0.1:8765",
+)
 
 CHANNEL_LAYERS = {
     "default": {

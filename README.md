@@ -1,6 +1,6 @@
 # LiFi VLC dashboard
 
-A Django and SQLite starter dashboard for the LiFi VLC project. It includes a login page, a MediaMTX camera player, and an authenticated WebSocket control channel.
+A Django and SQLite dashboard for the LiFi VLC project. It includes an authenticated live transmitter/receiver bridge, optical signal analytics, a MediaMTX camera player, and a real-time receive activity feed.
 
 ## Run locally
 
@@ -75,9 +75,16 @@ Funnel makes the Django login page publicly accessible. Before enabling it, chan
 
 The login page and dashboard theme are configured in [config/theme.json](config/theme.json). Edit its color, typography, spacing, border, component, chart, and effect tokens to re-theme both pages consistently. Restart Django after changing the file.
 
-## WebSocket control
+## Live LiFi dashboard
 
-The dashboard opens `/ws/control/` using the current page's WebSocket protocol and sends these JSON messages when the connection button is toggled:
+After signing in, use the top-right **Connect** button to let the authenticated dashboard bridge connect to the transmitter (`ws://127.0.0.1:8766`) and receiver (`ws://127.0.0.1:8765`) services on the Django host. Enter an ASCII message of up to 500 characters and choose **Send** to queue it for optical transmission. The animated optical network shows packet flow between the transmitter and receiver. The live data exchange panel shows outgoing messages through transmission completion and incoming text as it is decoded, then retains the complete decoded response. Receiver `receiver_status` telemetry is relayed live over the dashboard's `/ws/control/` WebSocket; ADC and voltage are shown together in the signal chart and as current readings. The fixed-height operations view uses the palette and component tokens in `config/theme.json`.
+
+The bridge URLs can be overridden when the hardware services run on another host:
+
+- `LIFI_TRANSMITTER_WEBSOCKET_URL`: transmitter WebSocket URL; defaults to `ws://127.0.0.1:8766`
+- `LIFI_RECEIVER_WEBSOCKET_URL`: receiver WebSocket URL; defaults to `ws://127.0.0.1:8765`
+
+The dashboard opens `/ws/control/` using the current page's WebSocket protocol and sends these JSON messages:
 
 ```json
 {"command": "connection", "value": "connect"}
@@ -87,7 +94,11 @@ The dashboard opens `/ws/control/` using the current page's WebSocket protocol a
 {"command": "connection", "value": "disconnect"}
 ```
 
-The authenticated Django Channels consumer validates the message, logs the requested state, and replies with an `accepted` acknowledgement. The in-memory channel layer is sufficient for this single-process starter; connect a hardware/controller integration to the consumer when implementing device behavior.
+```json
+{"command": "send", "message": "Hello World"}
+```
+
+The authenticated Django Channels consumer proxies those commands and hardware events between the browser and the two LiFi WebSocket services. Keep the hardware services reachable only on trusted networks; the dashboard credentials protect the browser-facing bridge.
 
 ## Configuration and tests
 

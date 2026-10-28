@@ -36,4 +36,7 @@
 {% for name, value in theme.effects.items %}
   --effect-{{ name }}: {{ value }};
 {% endfor %}
+{% for name, value in theme.charts.items %}
+  --chart-{{ name }}: {{ value }};
+{% endfor %}
 }

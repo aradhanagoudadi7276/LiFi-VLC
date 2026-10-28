@@ -3,136 +3,662 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard | LiFi Control</title>
+  <title>LiFi Operations | VLC Control</title>
   <style>
     {% include "dashboard/theme_tokens.html" %}
+    :root {
+      --bg: var(--color-background);
+      --surface: var(--component-card-background, var(--color-surface));
+      --surface-raised: var(--color-surface_secondary);
+      --line: var(--color-border);
+      --muted: var(--color-text_secondary);
+      --text: var(--color-text_primary);
+      --cyan: var(--chart-signal, var(--color-accent));
+      --green: var(--color-success);
+      --amber: var(--color-warning);
+      --red: var(--color-error);
+    }
     * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; background: var(--color-background); color: var(--color-text-primary); font-family: var(--font-primary), var(--font-fallback); }
-    header { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-xl); min-height: var(--component-header-height); padding: var(--spacing-md) clamp(var(--spacing-xl), 5vw, 64px); border-bottom: 1px solid var(--component-header-border); background: var(--component-header-background); }
-    .brand { color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); letter-spacing: .12em; text-transform: uppercase; }
-    .user { display: flex; align-items: center; gap: var(--spacing-lg); color: var(--component-header-text); font-size: var(--font-size-sm); }
-    a { color: var(--color-primary); text-decoration: none; }
-    a:hover { color: var(--color-primary_hover); }
-    main { width: min(1100px, 100%); margin: 0 auto; padding: var(--spacing-3xl) var(--spacing-xl); }
-    h1 { margin: 0 0 var(--spacing-sm); font-family: var(--font-heading), var(--font-fallback); font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); }
-    .subtitle { margin: 0 0 var(--spacing-2xl); color: var(--color-text-secondary); }
-    .panel { overflow: hidden; border: var(--component-card-border); border-radius: var(--component-card-radius); background: var(--component-card-background); box-shadow: var(--component-card-shadow); }
-    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-lg); padding: var(--spacing-lg) var(--spacing-xl); border-bottom: 1px solid var(--color-border); }
-    .panel-heading h2 { margin: 0; font-size: var(--font-size-base); }
-    .live { display: flex; align-items: center; gap: var(--spacing-sm); color: var(--color-text-secondary); font-size: var(--font-size-xs); }
-    .live::before { width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--color-success); content: ""; }
-    .stream { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #05080e; }
-    .controls { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-xl); margin-top: var(--spacing-xl); padding: var(--spacing-xl); border: var(--component-card-border); border-radius: var(--component-card-radius); background: var(--component-card-background); box-shadow: var(--component-card-shadow); }
-    .control-copy strong { display: block; margin-bottom: var(--spacing-xs); }
-    .control-copy span { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
-    .connect { min-width: 150px; min-height: max(var(--component-button-height), {{ theme.accessibility.minimum_touch_target }}); padding: var(--spacing-sm) var(--spacing-lg); border: 0; border-radius: var(--component-button-radius); background: var(--component-button-primary_background); color: var(--component-button-primary_text); font: inherit; font-size: var(--font-size-sm); font-weight: var(--component-button-font_weight); cursor: pointer; transition: background var(--effect-transition), box-shadow var(--effect-transition); }
-    .connect:hover { background: var(--component-button-hover_background); }
-    .connect.disconnect { background: var(--color-error); color: #FFFFFF; }
-    .connect.disconnect:hover { opacity: var(--effect-hover_opacity); }
-    .connect:focus-visible { outline: none; box-shadow: var(--effect-focus_ring); }
-    .connect:disabled { opacity: .55; cursor: not-allowed; }
-    .logout { min-height: max(var(--component-button-height), {{ theme.accessibility.minimum_touch_target }}); padding: 0 var(--spacing-sm); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-primary); font: inherit; cursor: pointer; }
-    .logout:hover { background: var(--color-surface_hover); }
-    .logout:focus-visible { outline: none; box-shadow: var(--effect-focus_ring); }
-    #connection-status { min-height: 20px; margin: var(--spacing-md) var(--spacing-xs) 0; color: var(--color-text-muted); font-size: var(--font-size-xs); }
-    @media (max-width: 560px) { .controls { align-items: stretch; flex-direction: column; } .connect { width: 100%; } header { align-items: flex-start; } .user { gap: var(--spacing-sm); } h1 { font-size: var(--font-size-3xl); } }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
+    body { height: 100vh; height: 100dvh; min-height: 0; margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font-primary), var(--font-fallback); }
+    button, input { font: inherit; }
+    .app { display: grid; width: min(1600px, 100%); height: 100%; margin: 0 auto; padding: 0 34px 20px; grid-template-rows: 72px 92px 100px minmax(0, 1fr) 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 12px; color: var(--text); font-size: 15px; font-weight: 700; letter-spacing: .03em; }
+    .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-info_background); color: var(--color-info); }
+    .brand-mark svg { width: 19px; height: 19px; }
+    .brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; }
+    .top-actions { display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: 12px; }
+    .user { color: var(--color-text_secondary); }
+    .logout { min-height: var(--component-button-height); padding: 0 11px; border: 1px solid var(--line); border-radius: var(--component-button-radius); background: var(--color-surface); color: var(--color-text_secondary); cursor: pointer; }
+    .logout:hover { border-color: var(--color-border_focus); background: var(--color-surface_hover); }
+    .logout:focus-visible, button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--effect-focus_ring); }
+    .page-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    h1 { margin: 0; font-size: clamp(20px, 2vw, 26px); letter-spacing: -.025em; }
+    .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+    .heading-actions { display: flex; align-items: center; gap: 12px; }
+    .session-state { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--surface); color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .state-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-text_muted); }
+    .session-state[data-state="connected"] { border-color: var(--color-success); color: var(--color-success); background: var(--color-success_background); }
+    .session-state[data-state="connected"] .state-dot { background: var(--green); }
+    .session-state[data-state="error"] { border-color: var(--color-error); color: var(--color-error); background: var(--color-error_background); }
+    .metrics { display: grid; min-height: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding-bottom: 15px; }
+    .metric, .card { min-width: 0; border: var(--component-card-border); border-radius: var(--component-card-radius); background: var(--surface); box-shadow: var(--component-card-shadow); }
+    .metric { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 13px 15px; }
+    .metric-label { color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+    .metric-value { margin-top: 7px; font-size: 22px; font-weight: 650; letter-spacing: -.035em; }
+    .metric-unit { margin-left: 4px; color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: 0; }
+    .metric-icon { display: grid; width: 33px; height: 33px; place-items: center; border-radius: var(--radius-md); background: var(--color-info_background); color: var(--color-info); }
+    .metric-icon svg { width: 17px; height: 17px; }
+    .metric:nth-child(2) .metric-icon { background: var(--color-success_background); color: var(--color-success); }
+    .metric:nth-child(3) .metric-icon { background: var(--color-warning_background); color: var(--color-warning); }
+    .metric:nth-child(4) .metric-icon { background: var(--color-info_background); color: var(--color-info); }
+    .workspace { display: grid; min-height: 0; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .9fr); grid-template-rows: minmax(0, 1.04fr) minmax(0, .96fr); gap: 13px; }
+    .card { display: flex; min-height: 0; flex-direction: column; overflow: hidden; }
+    .card-heading { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 15px; border-bottom: 1px solid var(--line); }
+    .card-heading h2 { margin: 0; font-size: 12px; font-weight: 650; }
+    .eyebrow { color: var(--muted); font-size: 10px; }
+    .camera-frame { position: relative; display: grid; min-height: 0; flex: 1; place-items: center; background: var(--color-surface_secondary); }
+    .stream { width: 100%; height: 100%; min-width: 0; min-height: 0; border: 0; object-fit: contain; }
+    .camera-hint { position: absolute; display: flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text_secondary); font-size: 10px; pointer-events: none; }
+    .camera-hint .state-dot { width: 6px; height: 6px; background: var(--amber); box-shadow: none; }
+    .camera-card.has-stream .camera-hint { display: none; }
+    .live-label { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 10px; }
+    .live-label .state-dot { width: 6px; height: 6px; background: var(--green); box-shadow: none; }
+    .chart-wrap { position: relative; min-height: 0; flex: 1; padding: 10px 12px 4px; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .chart-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 11px; pointer-events: none; }
+    .chart-wrap.has-data .chart-empty { display: none; }
+    .chart-legend { display: flex; align-items: center; gap: 14px; padding: 0 15px 11px; color: var(--muted); font-size: 10px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+    .legend-color { width: 7px; height: 7px; border-radius: 50%; background: var(--chart-signal); }
+    .legend-color.voltage { background: var(--chart-primary); }
+    .legend-color.amber { background: var(--chart-warning); }
+    .network-stage { position: relative; display: flex; min-height: 100px; flex: 1; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 22px; background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface_secondary) 100%); }
+    .network-node { z-index: 1; display: flex; width: 92px; flex: 0 0 92px; flex-direction: column; align-items: center; gap: 5px; padding: 7px 5px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--text); text-align: center; }
+    .network-icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: var(--radius-md); background: var(--color-info_background); color: var(--color-info); }
+    .network-icon svg { width: 20px; height: 20px; }
+    .network-node[data-node="receiver"] .network-icon { background: var(--color-success_background); color: var(--color-success); }
+    .network-node strong { font-size: 9px; font-weight: 600; }
+    .network-node small { color: var(--muted); font-size: 8px; }
+    .network-link { position: absolute; right: 68px; left: 68px; top: 44%; height: 2px; border-top: 2px dotted var(--color-border_focus); opacity: .8; }
+    .network-link::after { position: absolute; inset: -2px 0 auto; border-top: 2px dotted var(--color-accent); content: ""; opacity: .45; transform: translateY(8px); }
+    .network-packet { position: absolute; z-index: 2; top: calc(44% - 12px); display: grid; width: 24px; height: 24px; place-items: center; border: 1px solid var(--color-primary); border-radius: 6px; background: var(--color-info_background); color: var(--color-primary); opacity: 0; transform: translateX(0); }
+    .network-packet svg { width: 14px; height: 14px; }
+    .network-stage.is-active .network-packet { opacity: 1; }
+    .network-stage.is-sending .network-packet { animation: packet-forward 1.15s ease-in-out infinite; }
+    .network-stage.is-receiving .network-packet { border-color: var(--color-accent); background: var(--color-success_background); color: var(--color-accent); animation: packet-backward 1.15s ease-in-out infinite; }
+    .network-stage.is-active .network-link,
+    .network-stage.is-active .network-link::after { animation: link-flow .7s ease-in-out infinite alternate; }
+    .network-stage.is-receiving .network-link,
+    .network-stage.is-receiving .network-link::after { border-color: var(--color-accent); }
+    .network-stage.is-sending .network-node[data-node="transmitter"],
+    .network-stage.is-receiving .network-node[data-node="receiver"] { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-info_background); }
+    .network-stage.is-receiving .network-node[data-node="receiver"] { border-color: var(--color-success); box-shadow: 0 0 0 3px var(--color-success_background); }
+    @keyframes packet-forward { from { left: 23%; } to { left: 77%; } }
+    @keyframes packet-backward { from { left: 77%; } to { left: 23%; } }
+    @keyframes link-flow { to { opacity: .25; } }
+    .transmit-form { display: flex; gap: 8px; padding: 10px 13px; border-top: 1px solid var(--line); }
+    .message-input { width: 100%; min-width: 0; height: var(--component-input-height); padding: 0 11px; border: 1px solid var(--component-input-border); border-radius: var(--component-input-radius); background: var(--component-input-background); color: var(--component-input-text); font-size: 11px; }
+    .message-input::placeholder { color: var(--component-input-placeholder); }
+    .send-button, .connect-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: var(--component-button-height); border: 1px solid var(--component-button-primary_background); border-radius: var(--component-button-radius); background: var(--component-button-primary_background); color: var(--component-button-primary_text); font-size: 11px; font-weight: var(--component-button-font_weight); cursor: pointer; white-space: nowrap; transition: background var(--effect-transition), border-color var(--effect-transition), transform var(--effect-transition); }
+    .send-button { min-width: 75px; padding: 0 11px; }
+    .send-button:hover, .connect-button:hover { background: var(--component-button-hover_background); border-color: var(--component-button-hover_background); }
+    .send-button:disabled, .connect-button:disabled { opacity: .5; cursor: not-allowed; }
+    .send-button svg { width: 14px; height: 14px; }
+    .transmit-status { display: flex; min-height: 27px; align-items: center; justify-content: space-between; gap: 10px; padding: 0 15px; color: var(--muted); font-size: 10px; }
+    .transmit-status strong { color: var(--cyan); font-weight: 600; }
+    .connect-button { min-height: max(44px, var(--component-button-height)); padding: 0 16px; }
+    .activity-list { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 10px; overflow: auto; padding: 12px 14px; background: var(--color-surface_secondary); scrollbar-width: thin; scrollbar-color: var(--color-border) transparent; }
+    .activity-item { display: grid; max-width: 88%; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 5px 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--color-surface); font-size: 10px; animation: message-arrive .25s ease-out both; }
+    .activity-item[data-direction="sent"] { align-self: flex-end; border-color: var(--color-primary); background: var(--color-info_background); }
+    .activity-item[data-direction="received"] { align-self: flex-start; border-color: var(--color-accent); }
+    .activity-meta { display: flex; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 9px; }
+    .activity-time { font-variant-numeric: tabular-nums; }
+    .activity-tag { color: var(--color-primary); font-size: 9px; font-weight: 600; text-transform: uppercase; }
+    .activity-item[data-direction="received"] .activity-tag { color: var(--color-accent); }
+    .activity-text { grid-column: 1 / -1; overflow-wrap: anywhere; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
+    .activity-item[data-state="transmitting"] .activity-tag::after,
+    .activity-item[data-state="receiving"] .activity-tag::after { display: inline-block; width: 12px; height: 2px; margin-left: 6px; background: var(--color-primary); content: ""; vertical-align: middle; animation: signal-pulse .7s ease-in-out infinite alternate; }
+    .activity-item[data-state="receiving"] .activity-tag::after { background: var(--color-accent); }
+    .activity-item[data-state="received"] { animation: receive-flash .5s ease-out; }
+    .activity-empty { display: grid; height: 100%; min-height: 55px; place-items: center; color: var(--muted); font-size: 10px; text-align: center; }
+    @keyframes message-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes receive-flash { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent); } }
+    @keyframes signal-pulse { to { opacity: .3; transform: scaleX(.55); } }
+    .footer { display: flex; align-items: end; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 9px; }
+    #connection-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .connect-button.disconnect { border-color: var(--color-error); background: var(--color-error_background); color: var(--color-error); }
+    .connect-button.disconnect:hover { border-color: var(--color-error); background: var(--color-error); color: var(--component-button-primary_text); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+    @media (max-width: 900px) {
+      .app { padding: 0 18px 15px; grid-template-rows: 62px 78px 70px minmax(0, 1fr) 22px; }
+      .metrics { grid-row: 3; }
+      .workspace { grid-row: 4; grid-template-columns: minmax(0, 1.3fr) minmax(260px, .9fr); }
+      .metric { padding: 9px 10px; }
+      .metric-value { font-size: 18px; }
+    }
+    @media (max-width: 650px) {
+      .app { padding: 0 12px 10px; grid-template-rows: 56px 66px 61px minmax(0, 1fr) 20px; }
+      .top-actions { gap: 9px; font-size: 10px; }
+      .brand { gap: 8px; font-size: 13px; }
+      .brand-mark { width: 30px; height: 30px; }
+      .logout { padding: 6px 8px; }
+      .subtitle { max-width: 230px; font-size: 10px; }
+      .session-state { padding: 6px 8px; font-size: 9px; }
+      .metrics { gap: 6px; padding-bottom: 8px; }
+      .metric { align-items: flex-start; padding: 8px; }
+      .metric-label { font-size: 8px; letter-spacing: .03em; }
+      .metric-value { margin-top: 6px; font-size: 16px; }
+      .metric-unit { font-size: 8px; }
+      .metric-icon { display: none; }
+      .workspace { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, .85fr) minmax(0, 1.15fr); gap: 7px; }
+      .card-heading { min-height: 38px; padding: 0 9px; }
+      .card-heading h2 { font-size: 10px; }
+      .eyebrow, .live-label { font-size: 8px; }
+      .network-stage { min-height: 82px; gap: 8px; padding: 8px 12px; }
+      .network-node { width: 76px; flex-basis: 76px; padding: 5px 3px; }
+      .network-icon { width: 27px; height: 27px; }
+      .network-link { right: 48px; left: 48px; }
+      .network-packet { width: 20px; height: 20px; }
+      .transmit-form { gap: 5px; padding: 7px; }
+      .message-input { height: 32px; padding: 0 7px; font-size: 9px; }
+      .send-button { min-width: 57px; padding: 0 6px; font-size: 9px; }
+      .transmit-status { min-height: 23px; padding: 0 8px; font-size: 8px; }
+      .connect-button { min-height: 44px; font-size: 9px; }
+      .activity-list { padding: 1px 7px 5px; }
+      .activity-item { grid-template-columns: 34px minmax(0, 1fr); gap: 5px; min-height: 25px; font-size: 8px; }
+      .activity-tag { display: none; }
+      .footer { font-size: 8px; }
+    }
+    @media (max-height: 650px) and (min-width: 651px) {
+      .app { grid-template-rows: 56px 68px 74px minmax(0, 1fr) 18px; padding-bottom: 12px; }
+      .metrics { padding-bottom: 10px; }
+      .metric { padding: 8px 12px; }
+      .metric-value { margin-top: 4px; font-size: 19px; }
+      .card-heading { min-height: 40px; }
+      .workspace { grid-template-rows: minmax(0, .8fr) minmax(0, 1.2fr); }
+      .network-stage { min-height: 64px; }
+      .transmit-status { min-height: 24px; }
+      .transmit-form { padding: 7px 10px; }
+      .activity-item { min-height: 26px; }
+    }
+    @media (max-height: 650px) and (max-width: 650px) {
+      .workspace { grid-template-rows: minmax(0, .72fr) minmax(0, 1.28fr); }
+      .network-stage { min-height: 60px; padding-top: 4px; padding-bottom: 4px; }
+      .transmit-status { min-height: 22px; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">LiFi Control</div>
-    <div class="user">
-      <span>{{ request.user.username }}</span>
-      <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button class="logout" type="submit">Log out</button>
-      </form>
-    </div>
-  </header>
-  <main>
-    <h1>Dashboard</h1>
-    <p class="subtitle">Monitor your camera and control the LiFi connection.</p>
-    <section class="panel" aria-labelledby="camera-title">
-      <div class="panel-heading">
-        <h2 id="camera-title">Camera stream</h2>
-        <span class="live">Stream player</span>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m0 12v3M5.64 5.64l2.12 2.12m8.48 8.48 2.12 2.12M3 12h3m12 0h3M5.64 18.36l2.12-2.12m8.48-8.48 2.12-2.12"/><circle cx="12" cy="12" r="3"/></svg>
+        </span>
+        <span>LiFi Control<small>Visible light communications</small></span>
       </div>
-      <iframe class="stream" src="{{ camera_stream_url }}" title="Live camera stream" allow="autoplay; fullscreen" allowfullscreen></iframe>
-    </section>
-    <section class="controls" aria-label="Connection controls">
-      <div class="control-copy">
-        <strong>LiFi connection</strong>
-        <span id="connection-label">Disconnected</span>
+      <div class="top-actions">
+        <span class="user">{{ request.user.username }}</span>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="logout" type="submit">Log out</button>
+        </form>
       </div>
-      <button id="connect-button" class="connect" type="button" disabled>Connecting…</button>
+    </header>
+
+    <section class="page-heading" aria-label="Dashboard overview">
+      <div>
+        <h1>LiFi Operations</h1>
+        <p class="subtitle">Real-time optical link monitoring and transmission control</p>
+      </div>
+      <div class="heading-actions">
+        <span class="session-state" id="session-state" data-state="offline"><span class="state-dot"></span><span id="session-label">Offline</span></span>
+        <button id="connect-button" class="connect-button" type="button" disabled>Connecting…</button>
+      </div>
     </section>
-    <p id="connection-status" role="status" aria-live="polite">Connecting to control service…</p>
-  </main>
+
+    <section class="metrics" aria-label="Live transmission analytics">
+      <article class="metric">
+        <div><div class="metric-label">Received characters</div><div class="metric-value" id="received-count">0</div></div>
+        <span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7h14M5 12h10M5 17h7"/><path d="m17 15 2 2 3-4"/></svg></span>
+      </article>
+      <article class="metric">
+        <div><div class="metric-label">Signal level</div><div class="metric-value"><span id="signal-value">--</span><span class="metric-unit">ADC</span></div></div>
+        <span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h3l3-7 5 14 3-7h4"/></svg></span>
+      </article>
+      <article class="metric">
+        <div><div class="metric-label">Optical voltage</div><div class="metric-value"><span id="voltage-value">--</span><span class="metric-unit">V</span></div></div>
+        <span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></svg></span>
+      </article>
+      <article class="metric">
+        <div><div class="metric-label">Received messages</div><div class="metric-value" id="received-message-count">0</div></div>
+        <span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0m-9 3a4 4 0 0 1 6 0"/><circle cx="12" cy="18" r="1" fill="currentColor"/></svg></span>
+      </article>
+    </section>
+
+    <main class="workspace">
+      <section class="card camera-card" id="camera-card" aria-labelledby="camera-title">
+        <div class="card-heading">
+          <h2 id="camera-title">Optical receiver camera</h2>
+          <span class="live-label"><span class="state-dot"></span>CAMERA VIEW</span>
+        </div>
+        <div class="camera-frame">
+          <iframe class="stream" src="{{ camera_stream_url }}" title="Live optical receiver camera" allow="autoplay; fullscreen" allowfullscreen></iframe>
+          <span class="camera-hint"><span class="state-dot"></span>Live camera feed · Waiting for stream</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="signal-title">
+        <div class="card-heading">
+          <h2 id="signal-title">Photodiode signal</h2>
+          <span class="eyebrow">Live receiver telemetry</span>
+        </div>
+        <div class="chart-wrap" id="chart-wrap">
+          <canvas id="signal-chart" aria-label="Live ADC and voltage chart"></canvas>
+          <div class="chart-empty">Connect the receiver to visualize ADC and voltage</div>
+        </div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-color"></span>ADC · 0–1023</span>
+          <span class="legend-item"><span class="legend-color voltage"></span>Voltage · 0–3.3 V</span>
+          <span class="legend-item"><span class="legend-color amber"></span>Threshold <span id="threshold-label">--</span></span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="transmit-title">
+        <div class="card-heading">
+          <h2 id="transmit-title">Optical network</h2>
+          <span class="eyebrow">Transmitter ↔ receiver</span>
+        </div>
+        <div class="network-stage" id="network-stage" aria-label="Animated data path from transmitter to receiver">
+          <article class="network-node" data-node="transmitter">
+            <span class="network-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="13" width="16" height="8" rx="2"/><path d="M12 13V8m-4 0a6 6 0 0 1 8 0M5 5a10 10 0 0 1 14 0"/><path d="M8 17h.01M12 17h.01"/></svg>
+            </span>
+            <strong>Transmitter</strong>
+            <small>LED · TX</small>
+          </article>
+          <div class="network-link" aria-hidden="true"></div>
+          <span class="network-packet" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h7l2 2"/></svg>
+          </span>
+          <article class="network-node" data-node="receiver">
+            <span class="network-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20h14M8 20l1.5-6h5L16 20"/><circle cx="12" cy="8" r="2"/><path d="M8 4a6 6 0 0 1 8 0M5 1a10 10 0 0 1 14 0"/></svg>
+            </span>
+            <strong>Receiver</strong>
+            <small>Photodiode · RX</small>
+          </article>
+        </div>
+        <form class="transmit-form" id="transmit-form">
+          <input class="message-input" id="message-input" type="text" maxlength="500" placeholder="Enter a message to send over light…" autocomplete="off" aria-label="Message to transmit">
+          <button class="send-button" id="send-button" type="submit" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            Send
+          </button>
+        </form>
+        <div class="transmit-status"><span id="transmit-status">Connect to the LiFi hardware to start</span><span id="message-count">0 / 500</span></div>
+      </section>
+
+      <section class="card" aria-labelledby="activity-title">
+        <div class="card-heading">
+          <h2 id="activity-title">Data exchange</h2>
+          <span class="eyebrow" id="activity-count">0 messages</span>
+        </div>
+        <div class="activity-list" id="activity-list" aria-live="polite">
+          <div class="activity-empty" id="activity-empty">Sent messages and decoded responses appear here</div>
+        </div>
+      </section>
+    </main>
+    <footer class="footer"><span id="connection-status" role="status" aria-live="polite">Connecting to control service…</span><span>LiFi · Live telemetry</span></footer>
+  </div>
   <script>
     (() => {
-      const button = document.getElementById("connect-button");
-      const label = document.getElementById("connection-label");
-      const status = document.getElementById("connection-status");
+      const byId = (id) => document.getElementById(id);
+      const button = byId("connect-button");
+      const status = byId("connection-status");
+      const sessionState = byId("session-state");
+      const sessionLabel = byId("session-label");
+      const sendButton = byId("send-button");
+      const messageInput = byId("message-input");
       const socketUrl = new URL("{{ control_websocket_url|escapejs }}", window.location.href);
       if (socketUrl.protocol === "http:") socketUrl.protocol = "ws:";
       if (socketUrl.protocol === "https:") socketUrl.protocol = "wss:";
       const socket = new WebSocket(socketUrl);
+      const samples = [];
+      const outgoingMessages = [];
+      const maxSamples = 60;
       let connected = false;
       let pending = false;
+      let receivedCount = 0;
+      let eventCount = 0;
+      let threshold = null;
+      let receivedMessageCount = 0;
+      let activeIncomingMessage = null;
 
-      function updateButton() {
-        button.textContent = connected ? "Disconnect" : "Connect";
+      function setSignalDirection(direction, duration) {
+        const stage = byId("network-stage");
+        stage.classList.remove("is-sending", "is-receiving");
+        stage.classList.add("is-active", direction);
+        if (duration > 0) {
+          window.setTimeout(() => {
+            stage.classList.remove(direction);
+            if (!connected) stage.classList.remove("is-active");
+          }, duration);
+        }
+      }
+
+      function setSessionState(state, text) {
+        sessionState.dataset.state = state;
+        sessionLabel.textContent = text;
+      }
+
+      function updateControls() {
+        button.textContent = pending ? "Working…" : connected ? "Disconnect" : "Connect";
         button.classList.toggle("disconnect", connected);
-        label.textContent = connected ? "Connected" : "Disconnected";
         button.disabled = pending || socket.readyState !== WebSocket.OPEN;
+        sendButton.disabled = !connected || socket.readyState !== WebSocket.OPEN;
+        messageInput.disabled = !connected || socket.readyState !== WebSocket.OPEN;
+      }
+
+      function addExchange(text, direction, state) {
+        const list = byId("activity-list");
+        const empty = byId("activity-empty");
+        if (empty) empty.remove();
+        const item = document.createElement("div");
+        item.className = "activity-item";
+        item.dataset.direction = direction;
+        item.dataset.state = state;
+        const meta = document.createElement("div");
+        meta.className = "activity-meta";
+        const time = document.createElement("span");
+        time.className = "activity-time";
+        time.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        const category = document.createElement("span");
+        category.className = "activity-tag";
+        category.textContent = state;
+        meta.append(time, category);
+        const content = document.createElement("span");
+        content.className = "activity-text";
+        content.textContent = text;
+        item.append(meta, content);
+        list.append(item);
+        while (list.children.length > 30) {
+          const removed = list.firstElementChild;
+          const outgoingIndex = outgoingMessages.findIndex((entry) => entry.element === removed);
+          if (outgoingIndex !== -1) outgoingMessages.splice(outgoingIndex, 1);
+          list.removeChild(removed);
+        }
+        list.scrollTop = list.scrollHeight;
+        eventCount += 1;
+        byId("activity-count").textContent = `${eventCount} ${eventCount === 1 ? "message" : "messages"}`;
+        return { element: item, content, category, text, direction };
+      }
+
+      function updateExchange(entry, text, state) {
+        if (!entry) return;
+        entry.text = text;
+        entry.content.textContent = text || "Receiving optical data…";
+        entry.element.dataset.state = state;
+        entry.category.textContent = state;
+        entry.element.classList.remove("is-animating");
+        void entry.element.offsetWidth;
+        entry.element.classList.add("is-animating");
+      }
+
+      function findOutgoing(message) {
+        return outgoingMessages.find((entry) => (
+          entry.text === message &&
+          !["sent", "error"].includes(entry.element.dataset.state)
+        ));
+      }
+
+      function drawChart() {
+        const canvas = byId("signal-chart");
+        const bounds = canvas.getBoundingClientRect();
+        if (!bounds.width || !bounds.height) return;
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.round(bounds.width * ratio);
+        canvas.height = Math.round(bounds.height * ratio);
+        const context = canvas.getContext("2d");
+        context.scale(ratio, ratio);
+        const width = bounds.width;
+        const height = bounds.height;
+        const chartStyle = getComputedStyle(document.documentElement);
+        const pad = { top: 13, right: 33, bottom: 13, left: 33 };
+        const chartWidth = width - pad.left - pad.right;
+        const chartHeight = height - pad.top - pad.bottom;
+        context.font = "9px sans-serif";
+        context.strokeStyle = chartStyle.getPropertyValue("--chart-grid").trim();
+        context.lineWidth = 1;
+        for (let index = 0; index <= 4; index += 1) {
+          const y = pad.top + chartHeight * index / 4;
+          context.beginPath();
+          context.moveTo(pad.left, y);
+          context.lineTo(width - pad.right, y);
+          context.stroke();
+        }
+        context.fillStyle = chartStyle.getPropertyValue("--chart-label").trim();
+        context.textAlign = "right";
+        context.textBaseline = "middle";
+        [1023, 512, 0].forEach((value, index) => {
+          const y = pad.top + chartHeight * index / 2;
+          context.fillText(String(value), pad.left - 6, y);
+        });
+        context.textAlign = "left";
+        ["3.3", "1.65", "0"].forEach((value, index) => {
+          const y = pad.top + chartHeight * index / 2;
+          context.fillText(value, width - pad.right + 6, y);
+        });
+        if (threshold !== null) {
+          const y = pad.top + chartHeight * (1 - threshold / 1023);
+          context.setLineDash([4, 4]);
+          context.strokeStyle = chartStyle.getPropertyValue("--chart-warning").trim();
+          context.beginPath();
+          context.moveTo(pad.left, y);
+          context.lineTo(width - pad.right, y);
+          context.stroke();
+          context.setLineDash([]);
+        }
+        if (!samples.length) return;
+        const drawSeries = (key, maximum, color) => {
+          context.beginPath();
+          samples.forEach((sample, index) => {
+            const x = pad.left + chartWidth * index / (maxSamples - 1);
+            const y = pad.top + chartHeight * (1 - sample[key] / maximum);
+            if (index === 0) context.moveTo(x, y);
+            else context.lineTo(x, y);
+          });
+          context.strokeStyle = color;
+          context.lineWidth = 2;
+          context.lineJoin = "round";
+          context.stroke();
+          const lastX = pad.left + chartWidth * (samples.length - 1) / (maxSamples - 1);
+          const lastY = pad.top + chartHeight * (1 - samples[samples.length - 1][key] / maximum);
+          context.beginPath();
+          context.arc(lastX, lastY, 3, 0, Math.PI * 2);
+          context.fillStyle = color;
+          context.fill();
+        };
+        drawSeries("adc", 1023, chartStyle.getPropertyValue("--chart-signal").trim());
+        drawSeries("voltage", 3.3, chartStyle.getPropertyValue("--chart-primary").trim());
+      }
+
+      function updateSignal(data) {
+        const hasAdc = Number.isFinite(data.adc);
+        const hasVoltage = Number.isFinite(data.voltage);
+        if (hasAdc) byId("signal-value").textContent = Math.round(data.adc);
+        if (hasVoltage) byId("voltage-value").textContent = data.voltage.toFixed(3);
+        if (hasAdc || hasVoltage) {
+          const lastSample = samples[samples.length - 1] || { adc: 0, voltage: 0 };
+          samples.push({
+            adc: hasAdc ? Math.max(0, Math.min(1023, data.adc)) : lastSample.adc,
+            voltage: hasVoltage ? Math.max(0, Math.min(3.3, data.voltage)) : lastSample.voltage,
+          });
+          if (samples.length > maxSamples) samples.shift();
+          byId("chart-wrap").classList.add("has-data");
+          drawChart();
+        }
       }
 
       socket.addEventListener("open", () => {
-        status.textContent = "Control service connected.";
-        updateButton();
+        status.textContent = "Secure dashboard control channel connected.";
+        updateControls();
       });
+
       socket.addEventListener("message", (event) => {
-        let message;
+        let data;
         try {
-          message = JSON.parse(event.data);
+          data = JSON.parse(event.data);
         } catch {
           status.textContent = "Received an invalid response from the control service.";
-          pending = false;
-          updateButton();
           return;
         }
-        if (message.error) {
-          status.textContent = message.error;
+        if (data.error) {
           pending = false;
-          updateButton();
+          status.textContent = data.error;
+          byId("transmit-status").textContent = data.error;
+          connected = false;
+          setSessionState("error", data.source ? "Hardware connection lost" : "Hardware unavailable");
+          updateControls();
           return;
         }
-        if (message.command === "connection" && message.status === "accepted") {
-          connected = message.value === "connect";
+        if (data.command === "connection" && data.status === "accepted") {
           pending = false;
-          status.textContent = `Connection ${message.value === "connect" ? "established" : "closed"}.`;
-          updateButton();
+          connected = data.value === "connect";
+          setSessionState(connected ? "connected" : "offline", connected ? "Hardware connected" : "Offline");
+          status.textContent = connected ? "Transmitter and receiver are connected." : "Hardware connection closed.";
+          byId("transmit-status").textContent = connected ? "Ready to transmit over the optical link" : "Connect to the LiFi hardware to start";
+          updateControls();
+          if (connected) {
+            byId("network-stage").classList.add("is-active");
+            addExchange("Transmitter and photodiode receiver ready", "system", "connected");
+          } else {
+            byId("network-stage").classList.remove("is-active", "is-sending", "is-receiving");
+          }
+          return;
+        }
+        if (data.command === "transmission" && data.status === "accepted") {
+          byId("transmit-status").textContent = "Message accepted by transmitter";
+          const outgoing = findOutgoing(data.message);
+          if (outgoing) updateExchange(outgoing, outgoing.text, "queued");
+          return;
+        }
+        if (data.command === "transmission" && data.status === "error") {
+          byId("transmit-status").textContent = data.message || "Could not send message";
+          const outgoing = outgoingMessages.find((entry) => entry.element.dataset.state === "queued");
+          if (outgoing) updateExchange(outgoing, data.message || outgoing.text, "error");
+          return;
+        }
+        if (data.source === "receiver") {
+          if (data.type === "status") {
+            if (typeof data.threshold === "number") {
+              threshold = data.threshold;
+              byId("threshold-label").textContent = threshold;
+              drawChart();
+            }
+          } else if (data.type === "receiver_status") {
+            updateSignal(data);
+          } else if (data.type === "character") {
+            updateSignal(data);
+            receivedCount += 1;
+            byId("received-count").textContent = receivedCount.toLocaleString();
+            if (!activeIncomingMessage) {
+              activeIncomingMessage = addExchange("", "received", "receiving");
+            }
+            updateExchange(
+              activeIncomingMessage,
+              data.text || `${activeIncomingMessage.text}${data.character || ""}`,
+              "receiving",
+            );
+            setSignalDirection("is-receiving", 500);
+          } else if (data.type === "message") {
+            receivedMessageCount += 1;
+            byId("received-message-count").textContent = receivedMessageCount.toLocaleString();
+            if (!activeIncomingMessage) {
+              activeIncomingMessage = addExchange(data.text || "(empty message)", "received", "received");
+            } else {
+              updateExchange(activeIncomingMessage, data.text || "(empty message)", "received");
+            }
+            activeIncomingMessage = null;
+          } else if (data.type === "error") {
+            addExchange(data.message || "Receiver error", "system", "error");
+          }
+          return;
+        }
+        if (data.source === "transmitter") {
+          if (data.type === "queued") {
+            byId("transmit-status").textContent = "Message queued for optical transmission";
+            const outgoing = findOutgoing(data.message);
+            if (outgoing) updateExchange(outgoing, outgoing.text, "queued");
+          } else if (data.type === "transmitting") {
+            byId("transmit-status").textContent = "Optical transmission in progress";
+            const outgoing = findOutgoing(data.message);
+            if (outgoing) updateExchange(outgoing, outgoing.text, "transmitting");
+            setSignalDirection("is-sending", 0);
+          } else if (data.type === "transmitted") {
+            byId("transmit-status").textContent = "Optical transmission complete";
+            const outgoing = findOutgoing(data.message);
+            if (outgoing) updateExchange(outgoing, outgoing.text, "sent");
+            byId("network-stage").classList.remove("is-sending");
+          } else if (data.type === "error") {
+            byId("transmit-status").textContent = data.message || "Transmitter error";
+            const outgoing = outgoingMessages.find((entry) => entry.element.dataset.state === "transmitting");
+            if (outgoing) updateExchange(outgoing, `${outgoing.text} · ${data.message || "Transmission failed"}`, "error");
+            byId("network-stage").classList.remove("is-sending");
+          }
+          return;
         }
       });
+
       socket.addEventListener("close", () => {
+        connected = false;
         pending = false;
-        button.disabled = true;
-        button.textContent = "Unavailable";
+        byId("network-stage").classList.remove("is-active", "is-sending", "is-receiving");
+        setSessionState("offline", "Service offline");
         status.textContent = "Control service disconnected. Refresh the page to reconnect.";
+        updateControls();
+        button.textContent = "Unavailable";
       });
+
       socket.addEventListener("error", () => {
-        status.textContent = "Could not connect to the control service.";
+        setSessionState("error", "Service unavailable");
+        status.textContent = "Could not connect to the dashboard control service.";
+        updateControls();
       });
+
       button.addEventListener("click", () => {
         if (pending || socket.readyState !== WebSocket.OPEN) return;
         pending = true;
-        updateButton();
-        socket.send(JSON.stringify({
-          command: "connection",
-          value: connected ? "disconnect" : "connect"
-        }));
+        const wasConnected = connected;
+        setSessionState(wasConnected ? "offline" : "connecting", wasConnected ? "Disconnecting" : "Connecting");
+        updateControls();
+        socket.send(JSON.stringify({ command: "connection", value: wasConnected ? "disconnect" : "connect" }));
       });
+
+      byId("transmit-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const message = messageInput.value;
+        if (!message || !connected || socket.readyState !== WebSocket.OPEN) return;
+        if (!/^[\x00-\x7F]+$/.test(message)) {
+          byId("transmit-status").textContent = "Only ASCII characters are supported by the transmitter.";
+          return;
+        }
+        const outgoing = addExchange(message, "sent", "queued");
+        outgoingMessages.push(outgoing);
+        socket.send(JSON.stringify({ command: "send", message }));
+        messageInput.value = "";
+        byId("message-count").textContent = "0 / 500";
+      });
+
+      messageInput.addEventListener("input", () => {
+        byId("message-count").textContent = `${messageInput.value.length} / 500`;
+      });
+
+      window.addEventListener("resize", drawChart);
+      updateControls();
     })();
   </script>
 </body>
