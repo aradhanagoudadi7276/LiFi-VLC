@@ -52,8 +52,12 @@
     .metric:nth-child(2) .metric-icon { background: var(--color-success_background); color: var(--color-success); }
     .metric:nth-child(3) .metric-icon { background: var(--color-warning_background); color: var(--color-warning); }
     .metric:nth-child(4) .metric-icon { background: var(--color-info_background); color: var(--color-info); }
-    .workspace { display: grid; min-height: 0; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .9fr); grid-template-rows: minmax(0, 1.04fr) minmax(0, .96fr); gap: 13px; }
+    .workspace { display: grid; min-height: 0; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .9fr); grid-template-rows: minmax(0, 1.04fr) minmax(0, .96fr); grid-template-areas: "network exchange" "graph camera"; gap: 13px; }
     .card { display: flex; min-height: 0; flex-direction: column; overflow: hidden; }
+    .camera-card { grid-area: camera; }
+    .signal-card { grid-area: graph; }
+    .network-card { grid-area: network; }
+    .exchange-card { grid-area: exchange; }
     .card-heading { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 15px; border-bottom: 1px solid var(--line); }
     .card-heading h2 { margin: 0; font-size: 12px; font-weight: 650; }
     .eyebrow { color: var(--muted); font-size: 10px; }
@@ -252,7 +256,7 @@
     <main class="workspace">
       <section class="card camera-card" id="camera-card" aria-labelledby="camera-title">
         <div class="card-heading">
-          <h2 id="camera-title">Optical receiver camera</h2>
+          <h2 id="camera-title">Live camera stream</h2>
           <span class="live-label"><span class="state-dot"></span>CAMERA VIEW</span>
         </div>
         <div class="camera-frame">
@@ -261,7 +265,7 @@
         </div>
       </section>
 
-      <section class="card" aria-labelledby="signal-title">
+      <section class="card signal-card" aria-labelledby="signal-title">
         <div class="card-heading">
           <h2 id="signal-title">Photodiode signal</h2>
           <span class="eyebrow">Live receiver telemetry</span>
@@ -277,7 +281,7 @@
         </div>
       </section>
 
-      <section class="card" aria-labelledby="transmit-title">
+      <section class="card network-card" aria-labelledby="transmit-title">
         <div class="card-heading">
           <h2 id="transmit-title">Optical network</h2>
           <span class="eyebrow">Transmitter ↔ receiver</span>
@@ -312,7 +316,7 @@
         <div class="transmit-status"><span id="transmit-status">Connect to the LiFi hardware to start</span><span id="message-count">0 / 500</span></div>
       </section>
 
-      <section class="card" aria-labelledby="activity-title">
+      <section class="card exchange-card" aria-labelledby="activity-title">
         <div class="card-heading">
           <h2 id="activity-title">Data exchange</h2>
           <span class="eyebrow" id="activity-count">0 messages</span>
