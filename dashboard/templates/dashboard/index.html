@@ -82,11 +82,14 @@
     .network-node small { color: var(--muted); font-size: 8px; }
     .network-link { position: absolute; right: 68px; left: 68px; top: 44%; height: 2px; border-top: 2px dotted var(--color-border_focus); opacity: .8; }
     .network-link::after { position: absolute; inset: -2px 0 auto; border-top: 2px dotted var(--color-accent); content: ""; opacity: .45; transform: translateY(8px); }
-    .network-packet { position: absolute; z-index: 2; top: calc(44% - 12px); display: grid; width: 24px; height: 24px; place-items: center; border: 1px solid var(--color-primary); border-radius: 6px; background: var(--color-info_background); color: var(--color-primary); opacity: 0; transform: translateX(0); }
-    .network-packet svg { width: 14px; height: 14px; }
-    .network-stage.is-active .network-packet { opacity: 1; }
-    .network-stage.is-sending .network-packet { animation: packet-forward 1.15s ease-in-out infinite; }
-    .network-stage.is-receiving .network-packet { border-color: var(--color-accent); background: var(--color-success_background); color: var(--color-accent); animation: packet-backward 1.15s ease-in-out infinite; }
+    .bit-stream { position: absolute; inset: 0; pointer-events: none; }
+    .bit-stream span { position: absolute; top: calc(44% - 7px); left: 23%; color: var(--color-primary); font-family: var(--font-monospace), monospace; font-size: 11px; font-weight: 700; opacity: 0; }
+    .network-stage.is-sending .bit-stream span { animation: bit-forward 1.35s linear infinite; }
+    .network-stage.is-receiving .bit-stream span { color: var(--color-accent); animation-name: bit-backward; }
+    .bit-stream span:nth-child(2) { animation-delay: -.27s; }
+    .bit-stream span:nth-child(3) { animation-delay: -.54s; }
+    .bit-stream span:nth-child(4) { animation-delay: -.81s; }
+    .bit-stream span:nth-child(5) { animation-delay: -1.08s; }
     .network-stage.is-active .network-link,
     .network-stage.is-active .network-link::after { animation: link-flow .7s ease-in-out infinite alternate; }
     .network-stage.is-receiving .network-link,
@@ -94,8 +97,8 @@
     .network-stage.is-sending .network-node[data-node="transmitter"],
     .network-stage.is-receiving .network-node[data-node="receiver"] { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-info_background); }
     .network-stage.is-receiving .network-node[data-node="receiver"] { border-color: var(--color-success); box-shadow: 0 0 0 3px var(--color-success_background); }
-    @keyframes packet-forward { from { left: 23%; } to { left: 77%; } }
-    @keyframes packet-backward { from { left: 77%; } to { left: 23%; } }
+    @keyframes bit-forward { 0% { left: 23%; opacity: 0; } 10%, 85% { opacity: 1; } 100% { left: 77%; opacity: 0; } }
+    @keyframes bit-backward { 0% { left: 77%; opacity: 0; } 10%, 85% { opacity: 1; } 100% { left: 23%; opacity: 0; } }
     @keyframes link-flow { to { opacity: .25; } }
     .transmit-form { display: flex; gap: 8px; padding: 10px 13px; border-top: 1px solid var(--line); }
     .message-input { width: 100%; min-width: 0; height: var(--component-input-height); padding: 0 11px; border: 1px solid var(--component-input-border); border-radius: var(--component-input-radius); background: var(--component-input-background); color: var(--component-input-text); font-size: 11px; }
@@ -161,7 +164,6 @@
       .network-node { width: 76px; flex-basis: 76px; padding: 5px 3px; }
       .network-icon { width: 27px; height: 27px; }
       .network-link { right: 48px; left: 48px; }
-      .network-packet { width: 20px; height: 20px; }
       .transmit-form { gap: 5px; padding: 7px; }
       .message-input { height: 32px; padding: 0 7px; font-size: 9px; }
       .send-button { min-width: 57px; padding: 0 6px; font-size: 9px; }
@@ -180,6 +182,10 @@
       .card-heading { min-height: 40px; }
       .workspace { grid-template-rows: minmax(0, .8fr) minmax(0, 1.2fr); }
       .network-stage { min-height: 64px; }
+      .network-node { gap: 2px; padding: 3px; }
+      .network-icon { width: 23px; height: 23px; }
+      .network-icon svg { width: 16px; height: 16px; }
+      .network-node small { font-size: 7px; }
       .transmit-status { min-height: 24px; }
       .transmit-form { padding: 7px 10px; }
       .activity-item { min-height: 26px; }
@@ -188,6 +194,10 @@
       .workspace { grid-template-rows: minmax(0, .72fr) minmax(0, 1.28fr); }
       .network-stage { min-height: 60px; padding-top: 4px; padding-bottom: 4px; }
       .transmit-status { min-height: 22px; }
+      .network-node { gap: 2px; padding: 3px; }
+      .network-icon { width: 23px; height: 23px; }
+      .network-icon svg { width: 16px; height: 16px; }
+      .network-node small { font-size: 7px; }
     }
   </style>
 </head>
@@ -281,9 +291,9 @@
             <small>LED · TX</small>
           </article>
           <div class="network-link" aria-hidden="true"></div>
-          <span class="network-packet" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h7l2 2"/></svg>
-          </span>
+          <div class="bit-stream" aria-hidden="true">
+            <span>1</span><span>0</span><span>1</span><span>1</span><span>0</span>
+          </div>
           <article class="network-node" data-node="receiver">
             <span class="network-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20h14M8 20l1.5-6h5L16 20"/><circle cx="12" cy="8" r="2"/><path d="M8 4a6 6 0 0 1 8 0M5 1a10 10 0 0 1 14 0"/></svg>
