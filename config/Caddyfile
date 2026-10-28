@@ -5,7 +5,7 @@
 	redir @camera_root /cam/ 308
 
 	handle /cam/* {
-		reverse_proxy 127.0.0.1:8888
+		reverse_proxy 127.0.0.1:8889
 	}
 
 	handle {
